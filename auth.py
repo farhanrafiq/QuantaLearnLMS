@@ -197,3 +197,48 @@ def get_activities():
     except Exception as e:
         print(f"Error getting activities: {e}")
         return jsonify({'error': 'Failed to load activities'}), 500
+
+@app.route('/api/users', methods=['POST'])
+@login_required
+def create_user():
+    """Create a new user"""
+    try:
+        data = request.get_json()
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=data.get('email')).first()
+        if existing_user:
+            return jsonify({'error': 'User with this email already exists'}), 400
+        
+        # Validate password confirmation
+        if data.get('password') != data.get('confirm_password'):
+            return jsonify({'error': 'Passwords do not match'}), 400
+        
+        from models import Role
+        
+        # Create new user
+        user = User()
+        user.school_id = current_user.school_id
+        user.email = data.get('email')
+        user.full_name = data.get('full_name')
+        user.phone = data.get('phone', '')
+        user.password_hash = generate_password_hash(data.get('password'))
+        user.active = True
+        
+        db.session.add(user)
+        db.session.flush()  # Get the user ID
+        
+        # Assign role
+        role_name = data.get('role')
+        role = Role.query.filter_by(name=role_name).first()
+        if role:
+            user.roles.append(role)
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'User created successfully', 'user_id': user.id}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating user: {e}")
+        return jsonify({'error': 'Failed to create user'}), 500

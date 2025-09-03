@@ -234,6 +234,41 @@ def get_alerts():
     
     return jsonify(alerts_data)
 
+
+@app.route('/api/transport/buses/<int:bus_id>/driver', methods=['POST'])
+@login_required
+@role_required('TransportManager', 'SchoolAdmin', 'SuperAdmin')
+def assign_driver(bus_id):
+    """Assign driver to a bus"""
+    try:
+        bus = Bus.query.filter_by(id=bus_id, school_id=current_user.school_id).first()
+        if not bus:
+            return jsonify({'error': 'Bus not found'}), 404
+        
+        data = request.get_json()
+        driver_id = data.get('driver_id')
+        
+        from models import Role, roles_users
+        # Verify the user is a driver
+        driver = User.query.join(roles_users).join(Role).filter(
+            User.id == driver_id,
+            User.school_id == current_user.school_id,
+            Role.name == 'Driver'
+        ).first()
+        
+        if not driver:
+            return jsonify({'error': 'Driver not found'}), 404
+        
+        bus.driver_id = driver_id
+        db.session.commit()
+        
+        return jsonify({'message': 'Driver assigned successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error assigning driver: {e}")
+        return jsonify({'error': 'Failed to assign driver'}), 500
+
 @app.route('/api/transport/alerts/<int:alert_id>/acknowledge', methods=['POST'])
 @login_required
 def acknowledge_alert(alert_id):
