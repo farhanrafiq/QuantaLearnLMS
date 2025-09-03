@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - QuantaFONS{% endblock %}
+
+{% block head %}
+<style>
+.dashboard-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.quick-action-btn {
+    border: 2px dashed #dee2e6;
+    color: #6c757d;
+    transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+    border-color: var(--quantafons-primary);
+    color: var(--quantafons-primary);
+    background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">Welcome back, {{ current_user.full_name }}!</h1>
+                    <p class="text-muted mb-0">{{ current_user.get_primary_role() }} Dashboard - {{ current_user.school.name }}</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted d-block">{{ moment().format('MMMM Do, YYYY') }}</small>
+                    <small class="text-muted" id="currentTime"></small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4" id="statsCards">
+        <!-- Dynamic stats will be loaded here -->
+    </div>
+    
+    <!-- Role-specific Dashboard Content -->
+    {% if user_role == 'SuperAdmin' or user_role == 'SchoolAdmin' %}
+    <div class="row">
+        <!-- School Overview -->
+        <div class="col-lg-8 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-school me-2"></i>School Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <canvas id="enrollmentChart" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <canvas id="attendanceChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('addUserModal')">
+                            <i class="fas fa-user-plus me-2"></i>Add New User
+                        </button>
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('addCourseModal')">
+                            <i class="fas fa-plus-circle me-2"></i>Create Course
+                        </button>
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('addBusModal')">
+                            <i class="fas fa-bus me-2"></i>Add Bus
+                        </button>
+                        <button class="btn quick-action-btn p-3 text-start" onclick="location.href='/transport'">
+                            <i class="fas fa-map-marked-alt me-2"></i>Live Tracking
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if user_role == 'Teacher' %}
+    <div class="row">
+        <!-- My Courses -->
+        <div class="col-lg-8 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>My Courses
+                    </h5>
+                    <button class="btn btn-sm quantafons-btn-primary" onclick="showModal('createCourseModal')">
+                        <i class="fas fa-plus me-1"></i>New Course
+                    </button>
+                </div>
+                <div class="card-body" id="teacherCourses">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading courses...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="col-lg-4 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body" id="recentActivity">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading activity...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if user_role == 'Student' %}
+    <div class="row">
+        <!-- My Courses -->
+        <div class="col-lg-8 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-book-open me-2"></i>My Courses
+                    </h5>
+                </div>
+                <div class="card-body" id="studentCourses">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading courses...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Upcoming Assignments -->
+        <div class="col-lg-4 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>Upcoming Assignments
+                    </h5>
+                </div>
+                <div class="card-body" id="upcomingAssignments">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading assignments...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if user_role == 'TransportManager' or user_role == 'Driver' %}
+    <div class="row">
+        <!-- Fleet Status -->
+        <div class="col-lg-8 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bus me-2"></i>Fleet Status
+                    </h5>
+                </div>
+                <div class="card-body" id="fleetStatus">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading fleet data...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Alerts -->
+        <div class="col-lg-4 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Active Alerts
+                    </h5>
+                </div>
+                <div class="card-body" id="activeAlerts">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading alerts...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent Activity (All Roles) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>System Activity
+                    </h5>
+                </div>
+                <div class="card-body" id="systemActivity">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                        <p>Activity monitoring coming soon...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% include 'modals/add_user.html' %}
+{% include 'modals/add_course.html' %}
+{% include 'modals/add_bus.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}" type="module"></script>
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+}
+updateTime();
+setInterval(updateTime, 1000);
+
+// Initialize dashboard based on user role
+document.addEventListener('DOMContentLoaded', function() {
+    const userRole = '{{ user_role }}';
+    window.DashboardManager.init(userRole);
+});
+
+function showModal(modalId) {
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+</script>
+{% endblock %}

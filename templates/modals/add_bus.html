@@ -1,0 +1,105 @@
+<!-- Add Bus Modal -->
+<div class="modal fade" id="addBusModal" tabindex="-1" aria-labelledby="addBusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addBusModalLabel">
+                    <i class="fas fa-bus me-2"></i>Add New Bus
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addBusForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="busName" class="form-label">Bus Name</label>
+                        <input type="text" class="form-control" id="busName" name="name" required placeholder="e.g., School Bus 01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="busRegistration" class="form-label">Registration Number</label>
+                        <input type="text" class="form-control" id="busRegistration" name="registration_no" required placeholder="e.g., ABC-1234">
+                    </div>
+                    <div class="mb-3">
+                        <label for="busCapacity" class="form-label">Capacity (Students)</label>
+                        <input type="number" class="form-control" id="busCapacity" name="capacity" min="10" max="100" value="50" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="busFuelCapacity" class="form-label">Fuel Tank Capacity (Liters)</label>
+                        <input type="number" class="form-control" id="busFuelCapacity" name="fuel_tank_capacity" min="50" max="500" value="100" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="busDriver" class="form-label">Assign Driver</label>
+                        <select class="form-select" id="busDriver" name="driver_id">
+                            <option value="">Select Driver (Optional)</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Note:</strong> An API key will be automatically generated for this bus to receive telemetry data.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn quantafons-btn-primary">
+                        <i class="fas fa-save me-1"></i>Add Bus
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load drivers when modal opens
+document.getElementById('addBusModal').addEventListener('show.bs.modal', function() {
+    loadDrivers();
+});
+
+function loadDrivers() {
+    const driverSelect = document.getElementById('busDriver');
+    driverSelect.innerHTML = '<option value="">Loading drivers...</option>';
+    
+    // In a real implementation, this would fetch from /api/users?role=Driver
+    // For now, we'll show a placeholder
+    driverSelect.innerHTML = `
+        <option value="">Select Driver (Optional)</option>
+        <option value="">Available drivers will be listed here</option>
+    `;
+}
+
+document.getElementById('addBusForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const busData = Object.fromEntries(formData.entries());
+    
+    fetch('/api/transport/buses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(busData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(`Bus created successfully!\nAPI Key: ${data.api_key}\n\nPlease save this API key securely. It will be needed to send telemetry data.`);
+            bootstrap.Modal.getInstance(document.getElementById('addBusModal')).hide();
+            this.reset();
+            // Refresh bus list
+            if (window.TransportManager) {
+                window.TransportManager.loadBuses();
+            }
+            // Refresh dashboard stats
+            if (window.DashboardManager) {
+                window.DashboardManager.loadStats();
+            }
+        } else {
+            alert('Error: ' + (data.error || 'Failed to create bus'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create bus. Please try again.');
+    });
+});
+</script>

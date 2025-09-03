@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Management - QuantaFONS{% endblock %}
+
+{% block head %}
+<style>
+.course-card {
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid #e9ecef;
+}
+
+.course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: var(--quantafons-primary);
+}
+
+.assignment-item {
+    border-left: 4px solid #e9ecef;
+    transition: border-color 0.2s;
+}
+
+.assignment-item:hover {
+    border-left-color: var(--quantafons-primary);
+}
+
+.assignment-due-soon {
+    border-left-color: #ffc107;
+}
+
+.assignment-overdue {
+    border-left-color: #dc3545;
+}
+
+.assignment-completed {
+    border-left-color: #28a745;
+}
+
+.progress-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.attendance-calendar {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.grade-badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="fas fa-graduation-cap me-2"></i>Learning Management System
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if user_role == 'Teacher' %}
+                            Manage your courses and track student progress
+                        {% elif user_role == 'Student' %}
+                            Access your courses and assignments
+                        {% elif user_role in ['SchoolAdmin', 'SuperAdmin'] %}
+                            Oversee academic activities and performance
+                        {% else %}
+                            Academic management dashboard
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    {% if user_role == 'Teacher' or user_role in ['SchoolAdmin', 'SuperAdmin'] %}
+                    <div class="btn-group">
+                        <button class="btn quantafons-btn-primary" onclick="showModal('createCourseModal')">
+                            <i class="fas fa-plus me-1"></i>New Course
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="showModal('createAssignmentModal')">
+                            <i class="fas fa-tasks me-1"></i>New Assignment
+                        </button>
+                    </div>
+                    {% elif user_role == 'Student' %}
+                    <button class="btn quantafons-btn-primary" onclick="showModal('enrollCourseModal')">
+                        <i class="fas fa-plus me-1"></i>Enroll in Course
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LMS Statistics -->
+    <div class="row mb-4">
+        {% if user_role == 'Teacher' %}
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary mx-auto mb-3">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3 class="mb-1" id="teacherCourseCount">{{ courses|length if courses else 0 }}</h3>
+                    <p class="text-muted mb-0">My Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success mx-auto mb-3">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalStudents">0</h3>
+                    <p class="text-muted mb-0">Total Students</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning mx-auto mb-3">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h3 class="mb-1" id="pendingSubmissions">0</h3>
+                    <p class="text-muted mb-0">Pending Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info mx-auto mb-3">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalAssignments">0</h3>
+                    <p class="text-muted mb-0">Assignments Created</p>
+                </div>
+            </div>
+        </div>
+        {% elif user_role == 'Student' %}
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary mx-auto mb-3">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3 class="mb-1" id="enrolledCourses">{{ courses|length if courses else 0 }}</h3>
+                    <p class="text-muted mb-0">Enrolled Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning mx-auto mb-3">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="mb-1" id="pendingAssignments">{{ assignments|length if assignments else 0 }}</h3>
+                    <p class="text-muted mb-0">Pending Assignments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success mx-auto mb-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3 class="mb-1" id="completedAssignments">0</h3>
+                    <p class="text-muted mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info mx-auto mb-3">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <h3 class="mb-1" id="averageGrade">--</h3>
+                    <p class="text-muted mb-0">Average Grade</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary mx-auto mb-3">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalCourses">{{ total_courses if total_courses else 0 }}</h3>
+                    <p class="text-muted mb-0">Total Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success mx-auto mb-3">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalStudentsAdmin">{{ total_students if total_students else 0 }}</h3>
+                    <p class="text-muted mb-0">Total Students</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning mx-auto mb-3">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalTeachers">{{ total_teachers if total_teachers else 0 }}</h3>
+                    <p class="text-muted mb-0">Total Teachers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info mx-auto mb-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="mb-1" id="overallPerformance">--</h3>
+                    <p class="text-muted mb-0">Performance</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Courses/Content -->
+        <div class="col-lg-8 mb-4">
+            {% if user_role == 'Teacher' %}
+            <!-- Teacher Courses -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>My Courses
+                    </h5>
+                    <button class="btn btn-sm quantafons-btn-primary" onclick="loadCourses()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body" id="teacherCoursesContent">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading courses...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Submissions -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Recent Submissions
+                    </h5>
+                </div>
+                <div class="card-body" id="recentSubmissions">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading submissions...
+                    </div>
+                </div>
+            </div>
+
+            {% elif user_role == 'Student' %}
+            <!-- Student Courses -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-book-open me-2"></i>My Courses
+                    </h5>
+                    <button class="btn btn-sm quantafons-btn-primary" onclick="loadCourses()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body" id="studentCoursesContent">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading courses...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Progress -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Assignment Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="assignmentProgressChart" height="200"></canvas>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Admin Overview -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Academic Performance Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <canvas id="enrollmentTrendsChart" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <canvas id="gradeDistributionChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>All Courses
+                    </h5>
+                </div>
+                <div class="card-body" id="allCoursesContent">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading courses...
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="col-lg-4">
+            {% if user_role == 'Teacher' %}
+            <!-- Quick Actions -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('createAssignmentModal')">
+                            <i class="fas fa-plus-circle me-2"></i>Create Assignment
+                        </button>
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('attendanceModal')">
+                            <i class="fas fa-user-check me-2"></i>Mark Attendance
+                        </button>
+                        <button class="btn quick-action-btn p-3 text-start" onclick="showModal('gradeModal')">
+                            <i class="fas fa-star me-2"></i>Grade Submissions
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Overview -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>Today's Attendance
+                    </h5>
+                </div>
+                <div class="card-body" id="attendanceOverview">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading attendance...
+                    </div>
+                </div>
+            </div>
+
+            {% elif user_role == 'Student' %}
+            <!-- Upcoming Assignments -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>Upcoming Assignments
+                    </h5>
+                </div>
+                <div class="card-body" id="upcomingAssignments">
+                    {% if assignments %}
+                        {% for assignment in assignments %}
+                        <div class="assignment-item p-3 mb-2 rounded">
+                            <h6 class="mb-1">{{ assignment.title }}</h6>
+                            <p class="mb-1 small text-muted">{{ assignment.course.name }}</p>
+                            <small class="text-muted">
+                                Due: {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') if assignment.due_date else 'No due date' }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No pending assignments</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Grade Summary -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Grade Summary
+                    </h5>
+                </div>
+                <div class="card-body" id="gradeSummary">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading grades...
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Recent Activity -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body" id="recentActivity">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                        <p>Activity monitoring coming soon</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Stats -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>System Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="systemStatsChart" height="200"></canvas>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% include 'modals/create_course.html' %}
+{% include 'modals/create_assignment.html' %}
+{% include 'modals/enroll_course.html' %}
+{% include 'modals/attendance.html' %}
+{% include 'modals/grade_submission.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/lms.js') }}" type="module"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userRole = '{{ user_role }}';
+    window.LMSManager.init(userRole);
+});
+
+function showModal(modalId) {
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+
+function loadCourses() {
+    window.LMSManager.loadCourses();
+}
+</script>
+{% endblock %}

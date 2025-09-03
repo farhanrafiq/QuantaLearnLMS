@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Login - QuantaFONS{% endblock %}
+
+{% block content %}
+<div class="container-fluid login-container d-flex align-items-center justify-content-center min-vh-100">
+    <div class="row w-100">
+        <div class="col-lg-4 col-md-6 col-sm-8 mx-auto">
+            <div class="card quantafons-card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <!-- Logo and Title -->
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="QuantaFONS" height="64" class="mb-3">
+                        <h2 class="quantafons-title mb-2">Welcome to QuantaFONS</h2>
+                        <p class="text-muted">Smart School Management System</p>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <form method="POST" id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+                        
+                        <button type="submit" class="btn quantafons-btn-primary w-100 mb-3">
+                            <i class="fas fa-sign-in-alt me-1"></i>Sign In
+                        </button>
+                    </form>
+                    
+                    <!-- Demo Credentials -->
+                    <div class="alert alert-info" role="alert">
+                        <h6><i class="fas fa-info-circle me-1"></i>Demo Credentials</h6>
+                        <small>
+                            <strong>Admin:</strong> admin@quantafons.com / admin123<br>
+                            <strong>Demo:</strong> Create an account or use the admin credentials above
+                        </small>
+                    </div>
+                    
+                    <!-- Links -->
+                    <div class="text-center">
+                        <a href="#" class="text-decoration-none">Forgot password?</a>
+                        <span class="text-muted mx-2">|</span>
+                        <a href="{{ url_for('register') }}" class="text-decoration-none">Create account</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="row mt-4">
+                <div class="col-4 text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <small class="text-muted">Learning Management</small>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <small class="text-muted">Live Bus Tracking</small>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <small class="text-muted">Fuel Analytics</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle password visibility
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const password = document.getElementById('password');
+    const icon = this.querySelector('i');
+    
+    if (password.type === 'password') {
+        password.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        password.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+// Form validation
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        e.preventDefault();
+        alert('Please enter both email and password.');
+    }
+});
+</script>
+{% endblock %}

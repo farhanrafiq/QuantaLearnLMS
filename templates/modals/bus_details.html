@@ -1,0 +1,165 @@
+<!-- Bus Details Modal -->
+<div class="modal fade" id="busDetailsModal" tabindex="-1" aria-labelledby="busDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="busDetailsModalLabel">
+                    <i class="fas fa-bus me-2"></i>Bus Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="busDetailsContent">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i> Loading bus details...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn quantafons-btn-primary" id="viewFuelAnalytics">
+                    <i class="fas fa-chart-line me-1"></i>View Fuel Analytics
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBusId = null;
+
+function showBusDetails(busId) {
+    currentBusId = busId;
+    const modal = new bootstrap.Modal(document.getElementById('busDetailsModal'));
+    modal.show();
+    loadBusDetails(busId);
+}
+
+function loadBusDetails(busId) {
+    const content = document.getElementById('busDetailsContent');
+    content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading bus details...</div>';
+    
+    fetch(`/api/transport/buses`)
+    .then(response => response.json())
+    .then(buses => {
+        const bus = buses.find(b => b.id === busId);
+        if (bus) {
+            renderBusDetails(bus);
+        } else {
+            content.innerHTML = '<div class="alert alert-danger">Bus not found.</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading bus details:', error);
+        content.innerHTML = '<div class="alert alert-danger">Failed to load bus details.</div>';
+    });
+}
+
+function renderBusDetails(bus) {
+    const content = document.getElementById('busDetailsContent');
+    const lastUpdate = bus.latest_location.timestamp 
+        ? new Date(bus.latest_location.timestamp).toLocaleString()
+        : 'Never';
+    
+    const fuelPercentage = bus.fuel_tank_capacity > 0 
+        ? Math.round((bus.latest_location.fuel_level / bus.fuel_tank_capacity) * 100)
+        : 0;
+    
+    const statusClass = bus.latest_location.engine_on ? 'text-success' : 'text-danger';
+    const statusText = bus.latest_location.engine_on ? 'Online' : 'Offline';
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Basic Information</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Name:</strong></td><td>${bus.name}</td></tr>
+                    <tr><td><strong>Registration:</strong></td><td>${bus.registration_no}</td></tr>
+                    <tr><td><strong>Capacity:</strong></td><td>${bus.capacity} students</td></tr>
+                    <tr><td><strong>Driver:</strong></td><td>${bus.driver_name || 'Not assigned'}</td></tr>
+                    <tr><td><strong>Status:</strong></td><td><span class="${statusClass}">${statusText}</span></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Current Status</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Speed:</strong></td><td>${bus.latest_location.speed || 0} km/h</td></tr>
+                    <tr><td><strong>Fuel Level:</strong></td><td>
+                        <div class="d-flex align-items-center">
+                            <div class="fuel-gauge me-2" style="width: 100px;">
+                                <div class="fuel-level fuel-${fuelPercentage > 50 ? 'high' : fuelPercentage > 20 ? 'medium' : 'low'}" 
+                                     style="width: ${fuelPercentage}%"></div>
+                            </div>
+                            <span>${fuelPercentage}%</span>
+                        </div>
+                    </td></tr>
+                    <tr><td><strong>Location:</strong></td><td>
+                        ${bus.latest_location.latitude && bus.latest_location.longitude 
+                            ? `${bus.latest_location.latitude.toFixed(6)}, ${bus.latest_location.longitude.toFixed(6)}`
+                            : 'Unknown'
+                        }
+                    </td></tr>
+                    <tr><td><strong>Last Update:</strong></td><td>${lastUpdate}</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row">
+            <div class="col-12">
+                <h6>Quick Actions</h6>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="trackBusOnMap(${bus.id})">
+                        <i class="fas fa-map-marked-alt me-1"></i>Track on Map
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="viewFuelAnalytics(${bus.id})">
+                        <i class="fas fa-chart-line me-1"></i>Fuel Analytics
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="viewRouteHistory(${bus.id})">
+                        <i class="fas fa-route me-1"></i>Route History
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+document.getElementById('viewFuelAnalytics').addEventListener('click', function() {
+    if (currentBusId) {
+        viewFuelAnalytics(currentBusId);
+    }
+});
+
+function trackBusOnMap(busId) {
+    // Close modal and focus on map
+    bootstrap.Modal.getInstance(document.getElementById('busDetailsModal')).hide();
+    if (window.TransportManager && window.TransportManager.focusBusOnMap) {
+        window.TransportManager.focusBusOnMap(busId);
+    }
+    // Switch to transport page if not already there
+    if (!window.location.pathname.includes('/transport')) {
+        window.location.href = '/transport';
+    }
+}
+
+function viewFuelAnalytics(busId) {
+    // This would typically open a fuel analytics dashboard
+    console.log('Opening fuel analytics for bus:', busId);
+    // For now, we'll just switch to the fuel tab in transport
+    bootstrap.Modal.getInstance(document.getElementById('busDetailsModal')).hide();
+    if (window.location.pathname.includes('/transport')) {
+        // Switch to fuel tab
+        const fuelTab = document.getElementById('fuel-tab');
+        if (fuelTab) {
+            fuelTab.click();
+        }
+    } else {
+        window.location.href = '/transport#fuel';
+    }
+}
+
+function viewRouteHistory(busId) {
+    console.log('Opening route history for bus:', busId);
+    // This would open route history analysis
+    alert('Route history feature coming soon!');
+}
+</script>

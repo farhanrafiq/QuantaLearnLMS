@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Transport Management - QuantaFONS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+.transport-map {
+    height: 500px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.bus-card {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.bus-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.bus-status-online {
+    color: #28a745;
+}
+
+.bus-status-offline {
+    color: #dc3545;
+}
+
+.fuel-gauge {
+    width: 100%;
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.fuel-level {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.fuel-high { background-color: #28a745; }
+.fuel-medium { background-color: #ffc107; }
+.fuel-low { background-color: #dc3545; }
+
+.alert-item {
+    border-left: 4px solid;
+    padding-left: 15px;
+}
+
+.alert-critical { border-left-color: #dc3545; }
+.alert-warning { border-left-color: #ffc107; }
+.alert-info { border-left-color: #17a2b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="fas fa-bus me-2"></i>Transport Management
+                    </h1>
+                    <p class="text-muted mb-0">Live tracking and fleet management</p>
+                </div>
+                <div>
+                    {% if current_user.has_role('TransportManager') or current_user.has_role('SchoolAdmin') or current_user.has_role('SuperAdmin') %}
+                    <button class="btn quantafons-btn-primary" onclick="showModal('addBusModal')">
+                        <i class="fas fa-plus me-1"></i>Add Bus
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transport Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary mx-auto mb-3">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <h3 class="mb-1" id="totalBuses">{{ buses|length }}</h3>
+                    <p class="text-muted mb-0">Total Buses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success mx-auto mb-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3 class="mb-1" id="activeBuses">0</h3>
+                    <p class="text-muted mb-0">Active Buses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning mx-auto mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="mb-1" id="activeAlerts">{{ alerts|length }}</h3>
+                    <p class="text-muted mb-0">Active Alerts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quantafons-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info mx-auto mb-3">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3 class="mb-1" id="activeRoutes">{{ routes|length }}</h3>
+                    <p class="text-muted mb-0">Active Routes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Live Map -->
+        <div class="col-lg-8 mb-4">
+            <div class="card quantafons-card h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>Live Bus Tracking
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshMap">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="centerMap">
+                            <i class="fas fa-crosshairs"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleFullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="transportMap" class="transport-map"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Side Panel -->
+        <div class="col-lg-4">
+            <!-- Bus List -->
+            <div class="card quantafons-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Fleet Status
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="busList" class="list-group list-group-flush">
+                        <!-- Dynamic bus list will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Alerts -->
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bell me-2"></i>Recent Alerts
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadAlerts()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="alertsList" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                        {% for alert in alerts %}
+                        <div class="list-group-item alert-item alert-{{ alert.level|lower }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ alert.title }}</h6>
+                                    <p class="mb-1 small">{{ alert.message }}</p>
+                                    <small class="text-muted">{{ alert.timestamp.strftime('%H:%M:%S') }}</small>
+                                </div>
+                                {% if not alert.is_acknowledged and (current_user.has_role('TransportManager') or current_user.has_role('SchoolAdmin') or current_user.has_role('SuperAdmin')) %}
+                                <button class="btn btn-sm btn-outline-secondary" onclick="acknowledgeAlert({{ alert.id }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fuel Analytics Tab -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card quantafons-card">
+                <div class="card-header bg-transparent">
+                    <ul class="nav nav-tabs card-header-tabs" id="transportTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                                <i class="fas fa-tachometer-alt me-1"></i>Overview
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="fuel-tab" data-bs-toggle="tab" data-bs-target="#fuel" type="button" role="tab">
+                                <i class="fas fa-gas-pump me-1"></i>Fuel Analytics
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="routes-tab" data-bs-toggle="tab" data-bs-target="#routes" type="button" role="tab">
+                                <i class="fas fa-route me-1"></i>Routes
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="transportTabContent">
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <canvas id="busStatusChart" height="200"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="fuelLevelChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="fuel" role="tabpanel">
+                            <div id="fuelAnalytics">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                    <p>Select a bus to view fuel analytics</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="routes" role="tabpanel">
+                            <div id="routesManagement">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-map fa-2x mb-2"></i>
+                                    <p>Routes management coming soon</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% include 'modals/add_bus.html' %}
+{% include 'modals/bus_details.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/transport.js') }}" type="module"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize transport management
+    window.TransportManager.init();
+});
+
+function showModal(modalId) {
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+
+function acknowledgeAlert(alertId) {
+    fetch(`/api/transport/alerts/${alertId}/acknowledge`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            location.reload(); // Refresh to update alert status
+        }
+    })
+    .catch(error => console.error('Error acknowledging alert:', error));
+}
+
+function loadAlerts() {
+    // Refresh alerts list
+    location.reload();
+}
+</script>
+{% endblock %}
