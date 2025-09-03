@@ -1,6 +1,6 @@
-from datetime import datetime
-from flask_login import UserMixin
 from app import db
+from flask_login import UserMixin
+from datetime import datetime
 
 # Association table for many-to-many relationship between users and roles
 roles_users = db.Table('roles_users',
@@ -11,26 +11,24 @@ roles_users = db.Table('roles_users',
 class School(db.Model):
     __tablename__ = 'schools'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False, unique=True)
-    address = db.Column(db.String(255))
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(100))
-    country = db.Column(db.String(100))
-    timezone = db.Column(db.String(64), default='UTC')
+    name = db.Column(db.String(120), nullable=False)
+    address = db.Column(db.Text)
+    phone = db.Column(db.String(30))
+    email = db.Column(db.String(120))
+    website = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    users = db.relationship('User', backref='school', lazy=True)
-    buses = db.relationship('Bus', backref='school', lazy=True)
-    routes = db.relationship('Route', backref='school', lazy=True)
-    courses = db.relationship('Course', backref='school', lazy=True)
-    classrooms = db.relationship('ClassRoom', backref='school', lazy=True)
+    users = db.relationship('User', backref='school', lazy='dynamic')
+    buses = db.relationship('Bus', backref='school', lazy='dynamic')
+    courses = db.relationship('Course', backref='school', lazy='dynamic')
 
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
-    description = db.Column(db.String(255))
+    description = db.Column(db.String(200))
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -55,34 +53,68 @@ class User(db.Model, UserMixin):
         return any(role.name == role_name for role in self.roles)
     
     def get_primary_role(self):
-        return self.roles[0].name if len(self.roles) > 0 else None
+        if self.roles and len(self.roles) > 0:
+            return self.roles[0].name
+        return None
 
 class ClassRoom(db.Model):
     __tablename__ = 'classrooms'
     id = db.Column(db.Integer, primary_key=True)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
-    section = db.Column(db.String(10))
-    capacity = db.Column(db.Integer)
-    
-    # Relationships
-    courses = db.relationship('Course', backref='classroom', lazy=True)
+    capacity = db.Column(db.Integer, default=30)
+    building = db.Column(db.String(50))
+    floor = db.Column(db.Integer)
 
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
-    classroom_id = db.Column(db.Integer, db.ForeignKey('classrooms.id'))
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    classroom_id = db.Column(db.Integer, db.ForeignKey('classrooms.id'))
+    credits = db.Column(db.Integer, default=3)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    teacher = db.relationship('User', backref='taught_courses')
-    assignments = db.relationship('Assignment', backref='course', lazy=True)
-    enrollments = db.relationship('Enrollment', backref='course', lazy=True)
-    attendance_records = db.relationship('Attendance', backref='course', lazy=True)
+    teacher = db.relationship('User', backref='courses')
+    classroom = db.relationship('ClassRoom', backref='courses')
+    assignments = db.relationship('Assignment', backref='course', lazy='dynamic')
+    enrollments = db.relationship('Enrollment', backref='course', lazy='dynamic')
+
+class Assignment(db.Model):
+    __tablename__ = 'assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime)
+    max_grade = db.Column(db.Float, default=100.0)
+    instructions = db.Column(db.Text)
+    is_published = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    submissions = db.relationship('Submission', backref='assignment', lazy='dynamic')
+
+class Submission(db.Model):
+    __tablename__ = 'submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text)
+    file_path = db.Column(db.String(255))
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    grade = db.Column(db.Float)
+    feedback = db.Column(db.Text)
+    graded_at = db.Column(db.DateTime)
+    graded_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # Relationships
+    student = db.relationship('User', foreign_keys=[student_id], backref='submissions')
+    grader = db.relationship('User', foreign_keys=[graded_by], backref='graded_submissions')
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
@@ -90,84 +122,59 @@ class Enrollment(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='active')  # active, completed, dropped
+    final_grade = db.Column(db.Float)
     
     # Relationships
     student = db.relationship('User', backref='enrollments')
 
-class Assignment(db.Model):
-    __tablename__ = 'assignments'
-    id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text)
-    due_date = db.Column(db.DateTime)
-    max_grade = db.Column(db.Float, default=100.0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    submissions = db.relationship('Submission', backref='assignment', lazy=True)
-
-class Submission(db.Model):
-    __tablename__ = 'submissions'
-    id = db.Column(db.Integer, primary_key=True)
-    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
-    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-    content = db.Column(db.Text)
-    file_path = db.Column(db.String(255))
-    grade = db.Column(db.Float)
-    feedback = db.Column(db.Text)
-    
-    # Relationships
-    student = db.relationship('User', backref='submissions')
-
 class Attendance(db.Model):
     __tablename__ = 'attendance'
     id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    date = db.Column(db.Date, default=datetime.utcnow().date)
-    present = db.Column(db.Boolean, default=True)
-    notes = db.Column(db.String(255))
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(10), default='present')  # present, absent, late, excused
+    notes = db.Column(db.Text)
+    recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    student = db.relationship('User', backref='attendance_records')
+    student = db.relationship('User', foreign_keys=[student_id], backref='attendance_records')
+    course = db.relationship('Course', backref='attendance_records')
+    recorder = db.relationship('User', foreign_keys=[recorded_by])
 
-# Transport Module Models
 class Bus(db.Model):
     __tablename__ = 'buses'
     id = db.Column(db.Integer, primary_key=True)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
-    name = db.Column(db.String(80), nullable=False)
-    registration_no = db.Column(db.String(80), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    registration_no = db.Column(db.String(50), nullable=False)
     capacity = db.Column(db.Integer, default=50)
-    api_key = db.Column(db.String(64), unique=True, nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Fuel tank capacity in liters
     fuel_tank_capacity = db.Column(db.Float, default=100.0)
+    api_key = db.Column(db.String(100), unique=True)  # For telemetry API access
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime)
     
     # Relationships
-    driver = db.relationship('User', backref='driven_buses')
-    routes = db.relationship('Route', backref='bus', lazy=True)
-    telemetry_data = db.relationship('Telemetry', backref='bus', lazy=True)
-    fuel_events = db.relationship('FuelEvent', backref='bus', lazy=True)
-    alerts = db.relationship('Alert', backref='bus', lazy=True)
+    driver = db.relationship('User', backref='assigned_bus')
+    routes = db.relationship('Route', backref='bus', lazy='dynamic')
+    telemetry = db.relationship('Telemetry', backref='bus', lazy='dynamic')
 
 class Route(db.Model):
     __tablename__ = 'routes'
     id = db.Column(db.Integer, primary_key=True)
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
-    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'), nullable=False)
-    name = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'))
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    waypoints = db.relationship('Waypoint', backref='route', lazy=True, order_by='Waypoint.sequence')
+    waypoints = db.relationship('Waypoint', backref='route', lazy='dynamic', order_by='Waypoint.sequence')
 
 class Waypoint(db.Model):
     __tablename__ = 'waypoints'
@@ -247,3 +254,42 @@ class ActivityLog(db.Model):
     # Relationships
     user = db.relationship('User', backref='activity_logs')
     school = db.relationship('School', backref='activity_logs')
+
+class Setting(db.Model):
+    __tablename__ = 'settings'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True, index=True)  # NULL for global settings
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)  # NULL for school-wide settings
+    category = db.Column(db.String(50), nullable=False, index=True)  # general, notification, transport, lms, security
+    key = db.Column(db.String(100), nullable=False, index=True)
+    value = db.Column(db.Text)
+    data_type = db.Column(db.String(20), default='string')  # string, integer, float, boolean, json
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    school = db.relationship('School', backref='settings')
+    user = db.relationship('User', backref='settings')
+    
+    def get_value(self):
+        """Convert string value to proper data type"""
+        if self.data_type == 'boolean':
+            return self.value.lower() == 'true'
+        elif self.data_type == 'integer':
+            return int(self.value)
+        elif self.data_type == 'float':
+            return float(self.value)
+        elif self.data_type == 'json':
+            import json
+            return json.loads(self.value)
+        return self.value
+    
+    def set_value(self, value):
+        """Set value with proper data type conversion"""
+        if self.data_type == 'boolean':
+            self.value = 'true' if value else 'false'
+        elif self.data_type == 'json':
+            import json
+            self.value = json.dumps(value)
+        else:
+            self.value = str(value)

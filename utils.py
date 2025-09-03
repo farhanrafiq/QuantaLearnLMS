@@ -33,6 +33,8 @@ def calculate_fuel_efficiency(telemetry_data):
         prev_data = telemetry_data[i-1]
         curr_data = telemetry_data[i]
         
+        distance = 0  # Initialize distance variable
+        
         # Calculate distance traveled
         if prev_data.odometer_km and curr_data.odometer_km:
             distance = curr_data.odometer_km - prev_data.odometer_km
@@ -42,21 +44,20 @@ def calculate_fuel_efficiency(telemetry_data):
         # Calculate fuel consumed
         if prev_data.fuel_level_liters and curr_data.fuel_level_liters:
             fuel_diff = prev_data.fuel_level_liters - curr_data.fuel_level_liters
-            if fuel_diff > 0:  # Only count fuel consumption, not refueling
+            if fuel_diff > 0 and distance > 0:  # Only count fuel consumption, not refueling
                 total_fuel_consumed += fuel_diff
                 
                 # Calculate efficiency for this segment
-                if 'distance' in locals() and distance > 0:
-                    kmpl = distance / fuel_diff
-                    l_per_100km = (fuel_diff / distance) * 100
-                    
-                    efficiency_points.append({
-                        'timestamp': curr_data.timestamp.isoformat(),
-                        'kmpl': round(kmpl, 2),
-                        'l_per_100km': round(l_per_100km, 2),
-                        'distance_km': round(distance, 2),
-                        'fuel_consumed_l': round(fuel_diff, 2)
-                    })
+                kmpl = distance / fuel_diff
+                l_per_100km = (fuel_diff / distance) * 100
+                
+                efficiency_points.append({
+                    'timestamp': curr_data.timestamp.isoformat(),
+                    'kmpl': round(kmpl, 2),
+                    'l_per_100km': round(l_per_100km, 2),
+                    'distance_km': round(distance, 2),
+                    'fuel_consumed_l': round(fuel_diff, 2)
+                })
     
     # Calculate overall efficiency
     overall_kmpl = total_distance / total_fuel_consumed if total_fuel_consumed > 0 else 0

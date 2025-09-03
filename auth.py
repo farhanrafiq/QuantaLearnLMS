@@ -222,7 +222,10 @@ def create_user():
         user.email = data.get('email')
         user.full_name = data.get('full_name')
         user.phone = data.get('phone', '')
-        user.password_hash = generate_password_hash(data.get('password'))
+        password = data.get('password')
+        if not password:
+            return jsonify({'error': 'Password is required'}), 400
+        user.password_hash = generate_password_hash(password)
         user.active = True
         
         db.session.add(user)

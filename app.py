@@ -46,6 +46,8 @@ migrate.init_app(app, db)
 with app.app_context():
     # Import models to ensure tables are created
     import models
+    # Drop and recreate tables to ensure schema matches
+    db.drop_all()
     db.create_all()
     
     # Create default roles and admin user
@@ -135,6 +137,7 @@ def load_user(user_id):
 from auth import *
 from transport import *
 from lms import *
+from settings import *
 
 # Start scheduler
 scheduler.start()

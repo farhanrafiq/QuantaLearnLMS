@@ -248,7 +248,7 @@ def assign_driver(bus_id):
         data = request.get_json()
         driver_id = data.get('driver_id')
         
-        from models import Role, roles_users
+        from models import Role, roles_users, User
         # Verify the user is a driver
         driver = User.query.join(roles_users).join(Role).filter(
             User.id == driver_id,

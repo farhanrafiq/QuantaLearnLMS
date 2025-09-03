@@ -63,7 +63,7 @@
                             <li><span class="dropdown-item-text text-muted">{{ current_user.school.name }}</span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-1"></i>Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-1"></i>Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings_page') }}"><i class="fas fa-cog me-1"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
                         </ul>
@@ -99,10 +99,10 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-6">
-                    <span class="text-muted">&copy; 2025 QuantaFONS. All rights reserved.</span>
+                    <span class="text-muted">&copy; 2025 School Management System</span>
                 </div>
                 <div class="col-md-6 text-end">
-                    <span class="text-muted">Smart School Management System</span>
+                    <span class="text-muted">Comprehensive Educational Platform</span>
                 </div>
             </div>
         </div>

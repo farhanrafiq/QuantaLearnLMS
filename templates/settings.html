@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - School Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs me-2"></i>Settings</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Settings Navigation -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Settings Categories</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
+                        <i class="fas fa-sliders-h me-2"></i>General
+                    </a>
+                    <a href="#preferences" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-user-cog me-2"></i>Personal Preferences
+                    </a>
+                    <a href="#lms" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-graduation-cap me-2"></i>LMS Settings
+                    </a>
+                    <a href="#transport" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-bus me-2"></i>Transport Settings
+                    </a>
+                    <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </a>
+                    {% if user_role in ['SchoolAdmin', 'SuperAdmin'] %}
+                    <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Content -->
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- General Settings -->
+                <div class="tab-pane fade show active" id="general">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">General Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user_role in ['SchoolAdmin', 'SuperAdmin'] %}
+                            <form id="generalSettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="schoolTimezone" class="form-label">School Timezone</label>
+                                            <select class="form-select" id="schoolTimezone" name="school_timezone">
+                                                <option value="UTC">UTC</option>
+                                                <option value="America/New_York">Eastern Time</option>
+                                                <option value="America/Chicago">Central Time</option>
+                                                <option value="America/Denver">Mountain Time</option>
+                                                <option value="America/Los_Angeles">Pacific Time</option>
+                                                <option value="Europe/London">GMT</option>
+                                                <option value="Asia/Mumbai">IST</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="dateFormat" class="form-label">Date Format</label>
+                                            <select class="form-select" id="dateFormat" name="date_format">
+                                                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                                <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="timeFormat" class="form-label">Time Format</label>
+                                            <select class="form-select" id="timeFormat" name="time_format">
+                                                <option value="24h">24 Hour</option>
+                                                <option value="12h">12 Hour</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="defaultLanguage" class="form-label">Default Language</label>
+                                            <select class="form-select" id="defaultLanguage" name="default_language">
+                                                <option value="en">English</option>
+                                                <option value="es">Spanish</option>
+                                                <option value="fr">French</option>
+                                                <option value="de">German</option>
+                                                <option value="hi">Hindi</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save General Settings</button>
+                            </form>
+                            {% else %}
+                            <p class="text-muted">General settings can only be modified by School Administrators.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Preferences -->
+                <div class="tab-pane fade" id="preferences">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Personal Preferences</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="preferencesForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="theme" class="form-label">Theme</label>
+                                            <select class="form-select" id="theme" name="theme">
+                                                <option value="light">Light</option>
+                                                <option value="dark">Dark</option>
+                                                <option value="auto">Auto (System)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="dashboardLayout" class="form-label">Dashboard Layout</label>
+                                            <select class="form-select" id="dashboardLayout" name="dashboard_layout">
+                                                <option value="default">Default</option>
+                                                <option value="compact">Compact</option>
+                                                <option value="expanded">Expanded</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="itemsPerPage" class="form-label">Items per Page</label>
+                                            <select class="form-select" id="itemsPerPage" name="items_per_page">
+                                                <option value="10">10</option>
+                                                <option value="20">20</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications">
+                                                <label class="form-check-label" for="emailNotifications">
+                                                    Enable Email Notifications
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Preferences</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LMS Settings -->
+                <div class="tab-pane fade" id="lms">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">LMS Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="lmsSettingsForm">
+                                <h6>Assignment Settings</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="defaultAssignmentDuration" class="form-label">Default Assignment Duration (days)</label>
+                                            <input type="number" class="form-control" id="defaultAssignmentDuration" name="default_assignment_duration_days" min="1" max="30">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="maxFileUploadSize" class="form-label">Max File Upload Size (MB)</label>
+                                            <input type="number" class="form-control" id="maxFileUploadSize" name="max_file_upload_size_mb" min="1" max="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="allowLateSubmissions" name="allow_late_submissions">
+                                            <label class="form-check-label" for="allowLateSubmissions">
+                                                Allow Late Submissions
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="attendanceRequired" name="attendance_required">
+                                            <label class="form-check-label" for="attendanceRequired">
+                                                Attendance Required
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save LMS Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Transport Settings -->
+                <div class="tab-pane fade" id="transport">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Transport Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="transportSettingsForm">
+                                <h6>Fuel Monitoring</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="fuelAlertThreshold" class="form-label">Fuel Alert Threshold (%)</label>
+                                            <input type="number" class="form-control" id="fuelAlertThreshold" name="default_fuel_alert_threshold" min="10" max="50">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="fuelEfficiencyTarget" class="form-label">Target Fuel Efficiency (km/l)</label>
+                                            <input type="number" class="form-control" id="fuelEfficiencyTarget" name="fuel_efficiency_target_kmpl" min="5" max="20" step="0.1">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h6>Tracking & Alerts</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="maxSpeedLimit" class="form-label">Max Speed Limit (km/h)</label>
+                                            <input type="number" class="form-control" id="maxSpeedLimit" name="max_speed_limit_kmh" min="40" max="120">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="telemetryRefreshInterval" class="form-label">Refresh Interval (seconds)</label>
+                                            <input type="number" class="form-control" id="telemetryRefreshInterval" name="telemetry_refresh_interval_seconds" min="10" max="300">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="geofenceAlertsEnabled" name="geofence_alert_enabled">
+                                            <label class="form-check-label" for="geofenceAlertsEnabled">
+                                                Enable Geofence Alerts
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Transport Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notification Settings -->
+                <div class="tab-pane fade" id="notifications">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Notification Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="notificationSettingsForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="emailNotificationsEnabled" name="email_notifications_enabled">
+                                            <label class="form-check-label" for="emailNotificationsEnabled">
+                                                Email Notifications
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="smsNotificationsEnabled" name="sms_notifications_enabled">
+                                            <label class="form-check-label" for="smsNotificationsEnabled">
+                                                SMS Notifications
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="pushNotificationsEnabled" name="push_notifications_enabled">
+                                            <label class="form-check-label" for="pushNotificationsEnabled">
+                                                Push Notifications
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="dailySummaryEnabled" name="daily_summary_enabled">
+                                            <label class="form-check-label" for="dailySummaryEnabled">
+                                                Daily Summary Reports
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Settings -->
+                {% if user_role in ['SchoolAdmin', 'SuperAdmin'] %}
+                <div class="tab-pane fade" id="security">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Security Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="securitySettingsForm">
+                                <h6>Session & Authentication</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
+                                            <input type="number" class="form-control" id="sessionTimeout" name="session_timeout_minutes" min="15" max="480">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="passwordMinLength" class="form-label">Minimum Password Length</label>
+                                            <input type="number" class="form-control" id="passwordMinLength" name="password_min_length" min="6" max="20">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="maxLoginAttempts" class="form-label">Max Login Attempts</label>
+                                            <input type="number" class="form-control" id="maxLoginAttempts" name="max_login_attempts" min="3" max="10">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="lockoutDuration" class="form-label">Lockout Duration (minutes)</label>
+                                            <input type="number" class="form-control" id="lockoutDuration" name="lockout_duration_minutes" min="5" max="60">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="requirePasswordComplexity" name="require_password_complexity">
+                                            <label class="form-check-label" for="requirePasswordComplexity">
+                                                Require Password Complexity
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}
