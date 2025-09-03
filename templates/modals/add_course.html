@@ -49,26 +49,46 @@ document.getElementById('addCourseModal').addEventListener('show.bs.modal', func
     loadClassrooms();
 });
 
-function loadTeachers() {
+async function loadTeachers() {
     const teacherSelect = document.getElementById('courseTeacher');
     teacherSelect.innerHTML = '<option value="">Loading teachers...</option>';
     
-    // In a real implementation, this would fetch from /api/users?role=Teacher
-    // For now, we'll show current user if they're a teacher
-    teacherSelect.innerHTML = `
-        <option value="">Select Teacher</option>
-        <option value="" selected>Current User (Auto-assign)</option>
-    `;
+    try {
+        const response = await fetch('/api/lms/teachers');
+        const data = await response.json();
+        
+        let options = '<option value="">Select Teacher</option>';
+        if (data.teachers && data.teachers.length > 0) {
+            data.teachers.forEach(teacher => {
+                options += `<option value="${teacher.id}">${teacher.full_name}</option>`;
+            });
+        }
+        teacherSelect.innerHTML = options;
+    } catch (error) {
+        console.error('Error loading teachers:', error);
+        teacherSelect.innerHTML = '<option value="">Error loading teachers</option>';
+    }
 }
 
-function loadClassrooms() {
+async function loadClassrooms() {
     const classroomSelect = document.getElementById('courseClassroom');
-    classroomSelect.innerHTML = `
-        <option value="">Select Classroom (Optional)</option>
-        <option value="">Room A</option>
-        <option value="">Room B</option>
-        <option value="">Lab 1</option>
-    `;
+    classroomSelect.innerHTML = '<option value="">Loading classrooms...</option>';
+    
+    try {
+        const response = await fetch('/api/lms/classrooms');
+        const data = await response.json();
+        
+        let options = '<option value="">Select Classroom (Optional)</option>';
+        if (data.classrooms && data.classrooms.length > 0) {
+            data.classrooms.forEach(classroom => {
+                options += `<option value="${classroom.id}">${classroom.name} (${classroom.capacity} capacity)</option>`;
+            });
+        }
+        classroomSelect.innerHTML = options;
+    } catch (error) {
+        console.error('Error loading classrooms:', error);
+        classroomSelect.innerHTML = '<option value="">Select Classroom (Optional)</option>';
+    }
 }
 
 document.getElementById('addCourseForm').addEventListener('submit', function(e) {

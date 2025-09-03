@@ -392,3 +392,45 @@ def enroll_course():
     db.session.commit()
     
     return jsonify({'message': 'Enrolled successfully'}), 201
+
+@app.route('/api/lms/teachers')
+@login_required
+@role_required('Teacher', 'SchoolAdmin', 'SuperAdmin')
+def get_teachers():
+    """Get list of teachers for the current school"""
+    try:
+        from models import Role, roles_users
+        teachers = User.query.join(roles_users).join(Role).filter(
+            User.school_id == current_user.school_id,
+            Role.name == 'Teacher'
+        ).all()
+        
+        return jsonify({
+            'teachers': [{
+                'id': teacher.id,
+                'full_name': teacher.full_name,
+                'email': teacher.email
+            } for teacher in teachers]
+        })
+    except Exception as e:
+        print(f"Error getting teachers: {e}")
+        return jsonify({'error': 'Failed to load teachers'}), 500
+
+@app.route('/api/lms/classrooms')
+@login_required
+@role_required('Teacher', 'SchoolAdmin', 'SuperAdmin')
+def get_classrooms():
+    """Get list of classrooms for the current school"""
+    try:
+        classrooms = ClassRoom.query.filter_by(school_id=current_user.school_id).all()
+        
+        return jsonify({
+            'classrooms': [{
+                'id': classroom.id,
+                'name': classroom.name,
+                'capacity': classroom.capacity
+            } for classroom in classrooms]
+        })
+    except Exception as e:
+        print(f"Error getting classrooms: {e}")
+        return jsonify({'error': 'Failed to load classrooms'}), 500

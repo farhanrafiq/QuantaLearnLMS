@@ -154,3 +154,33 @@ def api_profile():
         'school_id': current_user.school_id,
         'school_name': current_user.school.name
     })
+
+@app.route('/api/users')
+@login_required
+def list_users():
+    """List all users in the school"""
+    try:
+        role_filter = request.args.get('role')
+        users_query = User.query.filter_by(school_id=current_user.school_id)
+        
+        if role_filter:
+            from models import Role, roles_users
+            users_query = users_query.join(roles_users).join(Role).filter(Role.name == role_filter)
+        
+        users = users_query.all()
+        
+        return jsonify({
+            'users': [{
+                'id': user.id,
+                'full_name': user.full_name,
+                'email': user.email,
+                'phone': user.phone,
+                'is_active': user.is_active,
+                'roles': [role.name for role in user.roles],
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None
+            } for user in users]
+        })
+    except Exception as e:
+        print(f"Error listing users: {e}")
+        return jsonify({'error': 'Failed to load users'}), 500

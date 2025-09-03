@@ -83,6 +83,47 @@ with app.app_context():
         admin_user.active = True
         admin_user.roles.append(super_role)
         db.session.add(admin_user)
+        
+        # Create sample classrooms
+        from models import ClassRoom
+        sample_classrooms = [
+            {'name': 'Room A-101', 'capacity': 30, 'building': 'Academic Block A'},
+            {'name': 'Room B-202', 'capacity': 25, 'building': 'Academic Block B'},
+            {'name': 'Computer Lab 1', 'capacity': 40, 'building': 'Technology Center'},
+            {'name': 'Science Lab', 'capacity': 35, 'building': 'Science Block'},
+            {'name': 'Library Hall', 'capacity': 100, 'building': 'Main Building'}
+        ]
+        
+        for classroom_data in sample_classrooms:
+            if not ClassRoom.query.filter_by(name=classroom_data['name'], school_id=school.id).first():
+                classroom = ClassRoom()
+                classroom.name = classroom_data['name']
+                classroom.capacity = classroom_data['capacity']
+                classroom.building = classroom_data['building']
+                classroom.school_id = school.id
+                db.session.add(classroom)
+        
+        # Create sample buses for transport module
+        from models import Bus
+        import secrets
+        sample_buses = [
+            {'name': 'Bus Alpha', 'registration_no': 'QF-001', 'capacity': 45, 'fuel_tank_capacity': 80.0},
+            {'name': 'Bus Beta', 'registration_no': 'QF-002', 'capacity': 50, 'fuel_tank_capacity': 85.0},
+            {'name': 'Bus Gamma', 'registration_no': 'QF-003', 'capacity': 35, 'fuel_tank_capacity': 75.0}
+        ]
+        
+        for bus_data in sample_buses:
+            if not Bus.query.filter_by(registration_no=bus_data['registration_no'], school_id=school.id).first():
+                bus = Bus()
+                bus.school_id = school.id
+                bus.name = bus_data['name']
+                bus.registration_no = bus_data['registration_no']
+                bus.capacity = bus_data['capacity']
+                bus.fuel_tank_capacity = bus_data['fuel_tank_capacity']
+                bus.is_active = True
+                bus.api_key = secrets.token_urlsafe(32)
+                db.session.add(bus)
+        
         db.session.commit()
 
 @login_manager.user_loader
