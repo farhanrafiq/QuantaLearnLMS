@@ -109,7 +109,8 @@ def register():
 @login_required
 def dashboard():
     user_role = current_user.get_primary_role()
-    return render_template('dashboard.html', user_role=user_role)
+    current_date = datetime.now().strftime('%B %d, %Y')
+    return render_template('dashboard.html', user_role=user_role, current_date=current_date)
 
 # API Endpoints for mobile/external access
 @app.route('/api/auth/login', methods=['POST'])
