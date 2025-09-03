@@ -16,9 +16,13 @@ def lms_dashboard():
             Course.teacher_id == current_user.id
         ).order_by(Submission.submitted_at.desc()).limit(10).all()
         
+        # Get classrooms for course creation modal
+        classrooms = ClassRoom.query.filter_by(school_id=current_user.school_id).all()
+        
         return render_template('lms.html', 
                              courses=courses, 
                              submissions=recent_submissions,
+                             classrooms=classrooms,
                              user_role=user_role)
     
     elif user_role == 'Student':
@@ -46,10 +50,14 @@ def lms_dashboard():
             Role.name == 'Teacher'
         ).count()
         
+        # Get classrooms for course creation modal
+        classrooms = ClassRoom.query.filter_by(school_id=current_user.school_id).all()
+        
         return render_template('lms.html',
                              total_courses=total_courses,
                              total_students=total_students,
                              total_teachers=total_teachers,
+                             classrooms=classrooms,
                              user_role=user_role)
     
     return render_template('lms.html', user_role=user_role)
