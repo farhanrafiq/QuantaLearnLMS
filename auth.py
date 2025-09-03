@@ -184,3 +184,16 @@ def list_users():
     except Exception as e:
         print(f"Error listing users: {e}")
         return jsonify({'error': 'Failed to load users'}), 500
+
+@app.route('/api/activities')
+@login_required
+def get_activities():
+    """Get recent activities for monitoring"""
+    try:
+        from utils import get_recent_activities
+        limit = request.args.get('limit', 50, type=int)
+        activities = get_recent_activities(current_user.school_id, limit)
+        return jsonify({'activities': activities})
+    except Exception as e:
+        print(f"Error getting activities: {e}")
+        return jsonify({'error': 'Failed to load activities'}), 500

@@ -196,3 +196,53 @@ def get_user_dashboard_data(user):
         data['total_buses'] = Bus.query.filter_by(school_id=user.school_id).count()
     
     return data
+
+def log_activity(user_id, activity_type, description=None, resource_type=None, resource_id=None, request_obj=None):
+    """Log user activity for monitoring"""
+    try:
+        from models import ActivityLog
+        from app import db
+        
+        activity = ActivityLog()
+        activity.user_id = user_id
+        activity.school_id = current_user.school_id if current_user.is_authenticated else None
+        activity.activity_type = activity_type
+        activity.description = description
+        activity.resource_type = resource_type
+        activity.resource_id = resource_id
+        
+        if request_obj:
+            activity.ip_address = request_obj.environ.get('HTTP_X_FORWARDED_FOR') or request_obj.environ.get('REMOTE_ADDR')
+            activity.user_agent = request_obj.headers.get('User-Agent', '')[:255]
+        
+        db.session.add(activity)
+        db.session.commit()
+    except Exception as e:
+        print(f"Failed to log activity: {e}")
+
+def get_recent_activities(school_id, limit=50):
+    """Get recent activities for the school"""
+    try:
+        from models import ActivityLog, User
+        from app import db
+        
+        activities = db.session.query(ActivityLog, User).join(
+            User, ActivityLog.user_id == User.id
+        ).filter(
+            ActivityLog.school_id == school_id
+        ).order_by(
+            ActivityLog.timestamp.desc()
+        ).limit(limit).all()
+        
+        return [{
+            'id': activity.id,
+            'user_name': user.full_name,
+            'activity_type': activity.activity_type,
+            'description': activity.description,
+            'resource_type': activity.resource_type,
+            'timestamp': activity.timestamp.isoformat(),
+            'ip_address': activity.ip_address
+        } for activity, user in activities]
+    except Exception as e:
+        print(f"Failed to get activities: {e}")
+        return []

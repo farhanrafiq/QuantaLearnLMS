@@ -1,559 +1,391 @@
 :root {
-    --quantafons-primary: #4f46e5;
-    --quantafons-secondary: #6366f1;
-    --quantafons-success: #059669;
-    --quantafons-warning: #d97706;
-    --quantafons-danger: #dc2626;
-    --quantafons-info: #0891b2;
-    --quantafons-light: #fafafa;
-    --quantafons-dark: #374151;
-    --quantafons-gray-100: #f1f5f9;
-    --quantafons-gray-200: #e2e8f0;
-    --quantafons-gray-300: #cbd5e1;
-    --quantafons-gray-400: #94a3b8;
-    --quantafons-gray-500: #64748b;
-    --quantafons-gray-600: #475569;
-    --quantafons-gray-700: #334155;
-    --quantafons-gray-800: #1e293b;
-    --quantafons-gray-900: #0f172a;
+    --primary: #6366f1;
+    --secondary: #8b5cf6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --light: #f8fafc;
+    --dark: #1e293b;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
 }
 
-/* Global Styles */
-body.quantafons-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--quantafons-light);
-    color: var(--quantafons-gray-800);
-    line-height: 1.5;
+/* Clean Base Styles */
+* {
+    box-sizing: border-box;
 }
 
-/* Typography */
-.quantafons-title {
-    color: var(--quantafons-primary);
-    font-weight: 700;
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    line-height: 1.6;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+}
+
+/* Minimalist Navigation */
+.navbar {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--gray-200);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1rem;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1030;
+}
+
+.navbar-brand {
+    color: var(--gray-800) !important;
+    font-weight: 600;
+    font-size: 1.1rem;
     letter-spacing: -0.025em;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: var(--quantafons-gray-800);
-    font-weight: 600;
-}
-
-/* Navigation */
-.quantafons-navbar {
-    background: linear-gradient(135deg, var(--quantafons-primary) 0%, var(--quantafons-secondary) 100%);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-}
-
-.quantafons-navbar .navbar-brand {
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: white !important;
-}
-
-.quantafons-navbar .nav-link {
-    color: rgba(255, 255, 255, 0.9) !important;
+.nav-link {
+    color: var(--gray-600) !important;
     font-weight: 500;
-    padding: 0.75rem 1rem !important;
-    border-radius: 0.5rem;
-    margin: 0 0.25rem;
-    transition: all 0.2s ease;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 6px;
+    margin: 0 0.125rem;
+    transition: all 0.15s ease;
 }
 
-.quantafons-navbar .nav-link:hover {
-    color: white !important;
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
+.nav-link:hover {
+    color: var(--gray-800) !important;
+    background-color: var(--gray-100);
 }
 
-.quantafons-navbar .nav-link.active {
-    color: white !important;
-    background-color: rgba(255, 255, 255, 0.2);
+.nav-link.active {
+    color: var(--primary) !important;
+    background-color: rgba(99, 102, 241, 0.1);
 }
 
-/* Main Content */
+/* Clean Main Content */
 .main-content {
-    margin-top: 76px;
-    min-height: calc(100vh - 76px);
-    padding-bottom: 60px;
+    margin-top: 70px;
+    min-height: calc(100vh - 70px);
+    padding: 2rem 1rem;
 }
 
-/* Cards */
-.quantafons-card {
-    border: none;
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+/* Minimalist Cards */
+.card {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: #ffffff;
     transition: all 0.2s ease;
-    background: white;
 }
 
-.quantafons-card:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    transform: translateY(-2px);
-}
-
-.quantafons-card .card-header {
-    background: transparent;
-    border-bottom: 1px solid var(--quantafons-gray-200);
-    padding: 1.5rem;
-    border-radius: 1rem 1rem 0 0 !important;
-}
-
-.quantafons-card .card-body {
-    padding: 1.5rem;
-}
-
-.quantafons-card .card-title {
-    color: var(--quantafons-gray-800);
-    font-weight: 600;
-    margin-bottom: 0;
-}
-
-/* Buttons */
-.quantafons-btn-primary {
-    background-color: var(--quantafons-primary);
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    font-weight: 500;
-    color: white;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.quantafons-btn-primary:hover {
-    background-color: var(--quantafons-secondary);
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 1rem 1.25rem;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-title {
+    color: var(--gray-800);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Clean Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-primary {
+    background: var(--primary);
     color: white;
 }
 
-.quantafons-btn-primary:focus {
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.5);
-    color: white;
+.btn-primary:hover {
+    background: var(--secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
 }
 
 .btn-outline-primary {
-    border-color: var(--quantafons-primary);
-    color: var(--quantafons-primary);
-    border-radius: 0.75rem;
-    font-weight: 500;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    background: transparent;
 }
 
 .btn-outline-primary:hover {
-    background-color: var(--quantafons-primary);
-    border-color: var(--quantafons-primary);
-    transform: translateY(-1px);
+    background: var(--primary);
+    color: white;
 }
 
-/* Form Controls */
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+/* Clean Forms */
 .form-control, .form-select {
-    border: 2px solid var(--quantafons-gray-200);
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-    transition: all 0.2s ease;
-    font-size: 0.95rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+    transition: border-color 0.15s ease;
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: var(--quantafons-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-label {
-    font-weight: 600;
-    color: var(--quantafons-gray-700);
-    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    margin-bottom: 0.25rem;
+    font-size: 14px;
 }
 
-/* Login Page */
-.login-container {
-    background: linear-gradient(135deg, var(--quantafons-primary) 0%, var(--quantafons-secondary) 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="rgba(255,255,255,0.05)" points="0,1000 1000,0 1000,1000"/></svg>');
-    background-size: cover;
-}
-
-.login-container .card {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.feature-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 0.5rem;
-    color: white;
-    font-size: 1.5rem;
-}
-
-/* Statistics Cards */
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: white;
-    margin: 0 auto;
-}
-
-/* Dashboard Specific */
-.dashboard-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-}
-
-.quick-action-btn {
-    border: 2px dashed var(--quantafons-gray-300);
-    color: var(--quantafons-gray-500);
-    transition: all 0.2s;
-    background: transparent;
-    border-radius: 0.75rem;
-}
-
-.quick-action-btn:hover {
-    border-color: var(--quantafons-primary);
-    color: var(--quantafons-primary);
-    background-color: rgba(37, 99, 235, 0.05);
-    transform: translateY(-1px);
-}
-
-/* Transport Specific */
-.bus-card {
-    transition: all 0.2s;
-    cursor: pointer;
-    border-radius: 0.75rem;
-}
-
-.bus-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.bus-status-online {
-    color: var(--quantafons-success);
-}
-
-.bus-status-offline {
-    color: var(--quantafons-danger);
-}
-
-.fuel-gauge {
-    width: 100%;
-    height: 8px;
-    background-color: var(--quantafons-gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.fuel-level {
-    height: 100%;
-    transition: width 0.3s ease;
-    border-radius: 4px;
-}
-
-.fuel-high { 
-    background: linear-gradient(90deg, var(--quantafons-success) 0%, #22c55e 100%);
-}
-
-.fuel-medium { 
-    background: linear-gradient(90deg, var(--quantafons-warning) 0%, #fbbf24 100%);
-}
-
-.fuel-low { 
-    background: linear-gradient(90deg, var(--quantafons-danger) 0%, #f87171 100%);
-}
-
-/* Alerts */
-.alert-item {
-    border-left: 4px solid;
-    padding-left: 15px;
-    border-radius: 0 0.5rem 0.5rem 0;
-    transition: all 0.2s ease;
-}
-
-.alert-item:hover {
-    background-color: var(--quantafons-gray-50);
-}
-
-.alert-critical { 
-    border-left-color: var(--quantafons-danger);
-    background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
-}
-
-.alert-warning { 
-    border-left-color: var(--quantafons-warning);
-    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
-}
-
-.alert-info { 
-    border-left-color: var(--quantafons-info);
-    background: linear-gradient(90deg, rgba(6, 182, 212, 0.05) 0%, transparent 100%);
-}
-
-/* LMS Specific */
-.course-card {
-    transition: all 0.2s;
-    cursor: pointer;
-    border: 1px solid var(--quantafons-gray-200);
-    border-radius: 1rem;
-}
-
-.course-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    border-color: var(--quantafons-primary);
-}
-
-.assignment-item {
-    border-left: 4px solid var(--quantafons-gray-300);
-    transition: border-color 0.2s;
-    padding: 1rem;
-    border-radius: 0 0.5rem 0.5rem 0;
-    margin-bottom: 0.5rem;
+/* Dashboard Stats */
+.stat-card {
+    padding: 1.5rem;
+    text-align: center;
+    border-radius: 8px;
     background: white;
+    border: 1px solid var(--gray-200);
 }
 
-.assignment-item:hover {
-    border-left-color: var(--quantafons-primary);
-    background-color: var(--quantafons-gray-50);
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
 }
 
-.assignment-due-soon {
-    border-left-color: var(--quantafons-warning);
-    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
-}
-
-.assignment-overdue {
-    border-left-color: var(--quantafons-danger);
-    background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
-}
-
-.assignment-completed {
-    border-left-color: var(--quantafons-success);
-    background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
-}
-
-.progress-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-    background: conic-gradient(var(--quantafons-primary) 0deg, var(--quantafons-gray-200) 0deg);
-}
-
-.grade-badge {
+.stat-label {
+    color: var(--gray-600);
     font-size: 0.875rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
+    font-weight: 500;
 }
 
-/* Modals */
-.modal-content {
-    border: none;
-    border-radius: 1rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+/* Status Indicators */
+.status-online {
+    color: var(--success);
 }
 
-.modal-header {
-    border-bottom: 1px solid var(--quantafons-gray-200);
-    border-radius: 1rem 1rem 0 0;
-    background: linear-gradient(135deg, var(--quantafons-primary) 0%, var(--quantafons-secondary) 100%);
-    color: white;
+.status-offline {
+    color: var(--danger);
 }
 
-.modal-title {
-    color: white !important;
-    font-weight: 600;
-}
-
-.btn-close {
-    filter: brightness(0) invert(1);
-}
-
-/* Footer */
-.quantafons-footer {
-    background-color: var(--quantafons-gray-800);
-    color: var(--quantafons-gray-300);
-    padding: 1rem 0;
-    margin-top: auto;
+.status-warning {
+    color: var(--warning);
 }
 
 /* Tables */
 .table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
     border-collapse: separate;
     border-spacing: 0;
 }
 
 .table th {
-    background-color: var(--quantafons-gray-50);
-    color: var(--quantafons-gray-700);
+    background: var(--gray-50);
+    color: var(--gray-700);
     font-weight: 600;
-    border-bottom: 2px solid var(--quantafons-gray-200);
+    font-size: 13px;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
 }
 
 .table td {
-    border-bottom: 1px solid var(--quantafons-gray-200);
-    vertical-align: middle;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 14px;
 }
 
 .table-hover tbody tr:hover {
-    background-color: var(--quantafons-gray-50);
+    background: var(--gray-50);
 }
 
-/* List Groups */
-.list-group-item {
-    border: 1px solid var(--quantafons-gray-200);
-    border-radius: 0.5rem !important;
-    margin-bottom: 0.25rem;
+/* Modals */
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 1rem 1.25rem;
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--gray-800);
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+/* Alert Styles */
+.alert {
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border-left-color: var(--success);
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border-left-color: var(--warning);
+}
+
+.alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border-left-color: var(--danger);
+}
+
+/* Transport Specific */
+.bus-card {
+    cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.list-group-item:hover {
-    background-color: var(--quantafons-gray-50);
-    transform: translateX(2px);
+.fuel-gauge {
+    width: 100%;
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: 3px;
+    overflow: hidden;
 }
 
-/* Tabs */
-.nav-tabs .nav-link {
-    border: none;
-    border-radius: 0.75rem;
-    color: var(--quantafons-gray-600);
-    font-weight: 500;
-    padding: 0.75rem 1.5rem;
-    margin-right: 0.5rem;
-    transition: all 0.2s ease;
+.fuel-level {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
 }
 
-.nav-tabs .nav-link:hover {
-    border: none;
-    background-color: var(--quantafons-gray-100);
-    color: var(--quantafons-gray-800);
-}
+.fuel-high { background: var(--success); }
+.fuel-medium { background: var(--warning); }
+.fuel-low { background: var(--danger); }
 
-.nav-tabs .nav-link.active {
-    background: linear-gradient(135deg, var(--quantafons-primary) 0%, var(--quantafons-secondary) 100%);
-    color: white;
-    border: none;
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
     .main-content {
+        padding: 1rem 0.5rem;
         margin-top: 60px;
+    }
+    
+    .card-body {
         padding: 1rem;
     }
     
-    .quantafons-card .card-body {
+    .stat-card {
         padding: 1rem;
     }
     
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
+    .stat-number {
+        font-size: 1.5rem;
     }
-    
-    .feature-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1.25rem;
-    }
-}
-
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-/* Loading States */
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: var(--quantafons-primary);
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--quantafons-gray-100);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--quantafons-gray-400);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--quantafons-gray-500);
 }
 
 /* Utility Classes */
-.text-quantafons-primary {
-    color: var(--quantafons-primary) !important;
+.text-muted {
+    color: var(--gray-500) !important;
 }
 
-.bg-quantafons-primary {
-    background-color: var(--quantafons-primary) !important;
+.text-primary {
+    color: var(--primary) !important;
 }
 
-.border-quantafons-primary {
-    border-color: var(--quantafons-primary) !important;
+.bg-light {
+    background: var(--gray-50) !important;
 }
 
-.shadow-quantafons {
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1), 0 4px 6px -2px rgba(37, 99, 235, 0.05) !important;
+.border-0 {
+    border: none !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.rounded {
+    border-radius: 6px !important;
+}
+
+.rounded-lg {
+    border-radius: 8px !important;
+}
+
+/* Login Page */
+.login-container {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--gray-800);
+    font-weight: 600;
 }

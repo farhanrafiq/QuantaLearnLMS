@@ -230,3 +230,20 @@ class Geofence(db.Model):
     radius_meters = db.Column(db.Float, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ActivityLog(db.Model):
+    __tablename__ = 'activity_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    activity_type = db.Column(db.String(50), nullable=False)  # LOGIN, LOGOUT, CREATE_COURSE, SUBMIT_ASSIGNMENT, etc.
+    resource_type = db.Column(db.String(50))  # COURSE, ASSIGNMENT, BUS, USER, etc.
+    resource_id = db.Column(db.Integer)
+    description = db.Column(db.Text)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(255))
+    
+    # Relationships
+    user = db.relationship('User', backref='activity_logs')
+    school = db.relationship('School', backref='activity_logs')
