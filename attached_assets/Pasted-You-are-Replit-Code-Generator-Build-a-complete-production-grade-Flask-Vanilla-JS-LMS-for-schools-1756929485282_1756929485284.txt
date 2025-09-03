@@ -1,0 +1,914 @@
+You are Replit Code Generator. Build a complete, production‑grade Flask + Vanilla JS LMS for schools with a flagship Transport module for live bus tracking and fuel monitoring. Generate the entire repository exactly as specified. Use clean, minimal UI with advanced functionality. Everything must run on Replit in one click.
+
+Project goals
+1. Full LMS for schools multi‑tenant by School with roles SchoolAdmin Teacher Student Parent TransportManager Driver Accountant SuperAdmin
+2. Flagship Transport feature
+   - GPS live tracking of buses via SocketIO
+   - Fuel monitoring from sensor input via HTTP or MQTT
+   - Fuel consumption metrics km per liter l per 100 km and alerts for theft sudden drop refuel sudden rise idling engine on speed zero over‑speeding route deviation geofence entry and exit
+   - Route planning with waypoints stops and ETA
+3. Minimalist yet modern UI without frameworks only vanilla JS ES modules HTML CSS optionally Leaflet via CDN for maps and Socket.IO client via CDN
+4. Flask with SQLAlchemy JWT for API tokens Flask‑Login for web sessions Flask‑SocketIO APScheduler for periodic jobs paho‑mqtt optional
+5. SQLite in dev Postgres in prod. Migrations via Flask‑Migrate
+
+Create the following files with the exact contents below.
+
+======================================
+File: requirements.txt
+======================================
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Login==0.6.3
+Flask-Cors==4.0.1
+python-dotenv==1.0.1
+Flask-JWT-Extended==4.6.0
+Flask-SocketIO==5.3.6
+eventlet==0.36.1
+APScheduler==3.10.4
+paho-mqtt==1.6.1
+haversine==2.8.1
+psycopg2-binary==2.9.9
+
+======================================
+File: .env.example
+======================================
+FLASK_ENV=development
+SECRET_KEY=change-me
+DATABASE_URL=sqlite:///instance/app.db
+JWT_SECRET_KEY=change-me-too
+# Optional MQTT bridge
+MQTT_BROKER_URL=broker.hivemq.com
+MQTT_BROKER_PORT=1883
+MQTT_USERNAME=
+MQTT_PASSWORD=
+MQTT_TOPIC=schools/+/buses/+/telemetry
+# Optional Razorpay
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+
+======================================
+File: run.py
+======================================
+from app import create_app, socketio
+
+app = create_app()
+
+if __name__ == "__main__":
+    # Use eventlet for SocketIO in Replit
+    socketio.run(app, host="0.0.0.0", port=8000)
+
+======================================
+File: app/__init__.py
+======================================
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_login import LoginManager
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_socketio import SocketIO
+from dotenv import load_dotenv
+
+load_dotenv()
+
+db = SQLAlchemy()
+migrate = Migrate()
+login_manager = LoginManager()
+jwt = JWTManager()
+socketio = SocketIO(cors_allowed_origins="*")
+
+
+def create_app():
+    app = Flask(__name__, static_folder="static", template_folder="templates")
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///instance/app.db")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "devjwt")
+
+    CORS(app)
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+    jwt.init_app(app)
+    socketio.init_app(app, async_mode="eventlet")
+
+    from .models import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # Blueprints
+    from .auth import auth_bp
+    from .api_lms import lms_bp
+    from .api_transport import transport_bp
+    from .pages import pages_bp
+
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(lms_bp, url_prefix="/api/lms")
+    app.register_blueprint(transport_bp, url_prefix="/api/transport")
+    app.register_blueprint(pages_bp)
+
+    # Socket handlers
+    from .sockets import register_socketio
+    register_socketio(socketio)
+
+    # Scheduler jobs
+    from .scheduler import init_scheduler
+    init_scheduler(app)
+
+    with app.app_context():
+        db.create_all()
+
+    return app
+
+======================================
+File: app/models.py
+======================================
+from datetime import datetime
+from flask_login import UserMixin
+from . import db
+
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'))
+)
+
+class School(db.Model):
+    __tablename__ = 'schools'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, unique=True)
+    address = db.Column(db.String(255))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+    timezone = db.Column(db.String(64), default='Asia/Kolkata')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'))
+    school = db.relationship('School', backref=db.backref('users', lazy=True))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(120))
+    is_active = db.Column(db.Boolean, default=True)
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
+
+class ClassRoom(db.Model):
+    __tablename__ = 'classrooms'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    section = db.Column(db.String(10))
+
+class Course(db.Model):
+    __tablename__ = 'courses'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+class Enrollment(db.Model):
+    __tablename__ = 'enrollments'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+
+class Assignment(db.Model):
+    __tablename__ = 'assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    title = db.Column(db.String(120))
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime)
+
+class Submission(db.Model):
+    __tablename__ = 'submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    content = db.Column(db.Text)
+    grade = db.Column(db.Float)
+
+class Attendance(db.Model):
+    __tablename__ = 'attendance'
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    date = db.Column(db.Date, default=datetime.utcnow)
+    present = db.Column(db.Boolean, default=True)
+
+# Transport domain
+class Bus(db.Model):
+    __tablename__ = 'buses'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'))
+    name = db.Column(db.String(80), nullable=False)
+    registration_no = db.Column(db.String(80), unique=True)
+    capacity = db.Column(db.Integer)
+    api_key = db.Column(db.String(64), unique=True, nullable=False)
+
+class Driver(db.Model):
+    __tablename__ = 'drivers'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'))
+    full_name = db.Column(db.String(120))
+    phone = db.Column(db.String(30))
+
+class Route(db.Model):
+    __tablename__ = 'routes'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'))
+    name = db.Column(db.String(120))
+    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'))
+
+class Waypoint(db.Model):
+    __tablename__ = 'waypoints'
+    id = db.Column(db.Integer, primary_key=True)
+    route_id = db.Column(db.Integer, db.ForeignKey('routes.id'))
+    seq = db.Column(db.Integer)
+    lat = db.Column(db.Float)
+    lon = db.Column(db.Float)
+    stop_name = db.Column(db.String(120))
+
+class Telemetry(db.Model):
+    __tablename__ = 'telemetry'
+    id = db.Column(db.Integer, primary_key=True)
+    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'), index=True)
+    ts = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    lat = db.Column(db.Float)
+    lon = db.Column(db.Float)
+    speed_kmh = db.Column(db.Float)
+    fuel_level_l = db.Column(db.Float)
+    fuel_flow_lph = db.Column(db.Float)
+    odometer_km = db.Column(db.Float)
+    engine_on = db.Column(db.Boolean, default=False)
+
+class FuelEvent(db.Model):
+    __tablename__ = 'fuel_events'
+    id = db.Column(db.Integer, primary_key=True)
+    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'))
+    ts = db.Column(db.DateTime, default=datetime.utcnow)
+    type = db.Column(db.String(30))  # THEFT REFUEL IDLE OVER_SPEED DEV_OUTSIDE GEOFENCE
+    amount_l = db.Column(db.Float, default=0.0)
+    details = db.Column(db.Text)
+
+class Alert(db.Model):
+    __tablename__ = 'alerts'
+    id = db.Column(db.Integer, primary_key=True)
+    bus_id = db.Column(db.Integer, db.ForeignKey('buses.id'))
+    ts = db.Column(db.DateTime, default=datetime.utcnow)
+    level = db.Column(db.String(10), default='INFO')  # INFO WARN CRIT
+    title = db.Column(db.String(120))
+    message = db.Column(db.Text)
+    seen = db.Column(db.Boolean, default=False)
+
+======================================
+File: app/utils.py
+======================================
+import functools
+from flask import request, jsonify
+from flask_login import current_user
+
+ROLE_SUPER = 'SuperAdmin'
+ROLE_SCHOOL = 'SchoolAdmin'
+ROLE_TEACHER = 'Teacher'
+ROLE_STUDENT = 'Student'
+ROLE_PARENT = 'Parent'
+ROLE_TRANSPORT = 'TransportManager'
+ROLE_DRIVER = 'Driver'
+ROLE_ACCOUNTANT = 'Accountant'
+
+
+def role_required(*roles):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return jsonify({"error": "login required"}), 401
+            user_roles = {r.name for r in current_user.roles}
+            if not any(r in user_roles for r in roles):
+                return jsonify({"error": "forbidden"}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def api_key_required(model_lookup):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            key = request.headers.get('X-API-KEY')
+            if not key:
+                return jsonify({"error": "missing api key"}), 401
+            entity = model_lookup(key)
+            if not entity:
+                return jsonify({"error": "invalid api key"}), 403
+            return fn(entity, *args, **kwargs)
+        return wrapper
+    return decorator
+
+======================================
+File: app/auth.py
+======================================
+from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, logout_user, login_required
+from flask_jwt_extended import create_access_token
+from . import db
+from .models import User, Role, School
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.post('/register')
+def register():
+    data = request.get_json() or {}
+    email = data.get('email')
+    password = data.get('password')
+    full_name = data.get('full_name')
+    school_name = data.get('school_name', 'Default School')
+    if not email or not password:
+        return jsonify({"error": "email and password required"}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "email exists"}), 400
+    school = School.query.filter_by(name=school_name).first()
+    if not school:
+        school = School(name=school_name)
+        db.session.add(school)
+        db.session.commit()
+    user = User(email=email, full_name=full_name, password_hash=generate_password_hash(password), school_id=school.id)
+    # default role: SchoolAdmin
+    role = Role.query.filter_by(name='SchoolAdmin').first()
+    if not role:
+        role = Role(name='SchoolAdmin')
+        db.session.add(role)
+        db.session.commit()
+    user.roles.append(role)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "registered"})
+
+@auth_bp.post('/login')
+def login():
+    data = request.get_json() or {}
+    email = data.get('email')
+    password = data.get('password')
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "invalid credentials"}), 401
+    login_user(user)
+    token = create_access_token(identity=user.id)
+    return jsonify({"message": "ok", "token": token, "user": {"id": user.id, "name": user.full_name}})
+
+@auth_bp.post('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "logged out"})
+
+======================================
+File: app/api_lms.py
+======================================
+from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from . import db
+from .models import Course, Assignment, Submission, Enrollment, User, Attendance
+from .utils import role_required, ROLE_TEACHER, ROLE_SCHOOL, ROLE_STUDENT
+
+lms_bp = Blueprint('lms', __name__)
+
+@lms_bp.get('/courses')
+@login_required
+def list_courses():
+    courses = Course.query.all()
+    return jsonify([{ "id": c.id, "name": c.name, "teacher_id": c.teacher_id } for c in courses])
+
+@lms_bp.post('/courses')
+@role_required(ROLE_TEACHER, ROLE_SCHOOL)
+def create_course():
+    data = request.get_json() or {}
+    c = Course(name=data['name'], school_id=data.get('school_id'), teacher_id=data.get('teacher_id'))
+    db.session.add(c)
+    db.session.commit()
+    return jsonify({"id": c.id}), 201
+
+@lms_bp.post('/assignments')
+@role_required(ROLE_TEACHER)
+def create_assignment():
+    data = request.get_json() or {}
+    a = Assignment(course_id=data['course_id'], title=data['title'], description=data.get('description'))
+    db.session.add(a)
+    db.session.commit()
+    return jsonify({"id": a.id}), 201
+
+@lms_bp.post('/submissions')
+@role_required(ROLE_STUDENT)
+def submit_assignment():
+    data = request.get_json() or {}
+    s = Submission(assignment_id=data['assignment_id'], student_id=data['student_id'], content=data.get('content', ''))
+    db.session.add(s)
+    db.session.commit()
+    return jsonify({"id": s.id}), 201
+
+@lms_bp.post('/attendance')
+@role_required(ROLE_TEACHER)
+def mark_attendance():
+    data = request.get_json() or []
+    created = []
+    for item in data:
+        rec = Attendance(course_id=item['course_id'], student_id=item['student_id'], present=item.get('present', True))
+        db.session.add(rec)
+        created.append(item['student_id'])
+    db.session.commit()
+    return jsonify({"marked": created})
+
+======================================
+File: app/services_transport.py
+======================================
+from datetime import datetime, timedelta
+from haversine import haversine
+from . import db, socketio
+from .models import Telemetry, FuelEvent, Alert
+
+IDLE_THRESHOLD_MIN = 5
+THEFT_DROP_L = 3.0
+REFUEL_RISE_L = 3.0
+OVER_SPEED_KMH = 60
+
+
+def _last_telemetry(bus_id):
+    return Telemetry.query.filter_by(bus_id=bus_id).order_by(Telemetry.ts.desc()).first()
+
+
+def process_telemetry(bus, payload):
+    t = Telemetry(
+        bus_id=bus.id,
+        ts=datetime.utcfromtimestamp(payload.get('ts')/1000.0) if payload.get('ts') else datetime.utcnow(),
+        lat=payload.get('lat'),
+        lon=payload.get('lon'),
+        speed_kmh=payload.get('speed_kmh', 0.0),
+        fuel_level_l=payload.get('fuel_level_l'),
+        fuel_flow_lph=payload.get('fuel_flow_lph', 0.0),
+        odometer_km=payload.get('odometer_km', 0.0),
+        engine_on=payload.get('engine_on', True)
+    )
+    prev = _last_telemetry(bus.id)
+    db.session.add(t)
+    db.session.commit()
+
+    # Socket push
+    socketio.emit('telemetry_update', {
+        'bus_id': bus.id,
+        'ts': t.ts.isoformat(),
+        'lat': t.lat,
+        'lon': t.lon,
+        'speed_kmh': t.speed_kmh,
+        'fuel_level_l': t.fuel_level_l
+    })
+
+    if prev:
+        # Over speed
+        if t.speed_kmh and t.speed_kmh > OVER_SPEED_KMH:
+            _alert(bus.id, 'WARN', 'Overspeed', f"{t.speed_kmh:.1f} kmh")
+        # Fuel theft or refuel
+        if t.fuel_level_l is not None and prev.fuel_level_l is not None:
+            delta = t.fuel_level_l - prev.fuel_level_l
+            if delta <= -THEFT_DROP_L and (t.speed_kmh or 0) < 5:
+                _fuel_event(bus.id, 'THEFT', abs(delta), f"drop {abs(delta):.1f} L at {t.ts}")
+            elif delta >= REFUEL_RISE_L and (t.speed_kmh or 0) < 5:
+                _fuel_event(bus.id, 'REFUEL', delta, f"rise {delta:.1f} L at {t.ts}")
+        # Idling
+        if t.engine_on and (t.speed_kmh or 0) < 3:
+            since = datetime.utcnow() - timedelta(minutes=IDLE_THRESHOLD_MIN)
+            idle = Telemetry.query.filter(Telemetry.bus_id==bus.id, Telemetry.ts>=since, (Telemetry.speed_kmh==None) | (Telemetry.speed_kmh<3)).count()
+            if idle >= IDLE_THRESHOLD_MIN:
+                _fuel_event(bus.id, 'IDLE', 0.0, f"idle {IDLE_THRESHOLD_MIN}+ min")
+
+
+def _fuel_event(bus_id, etype, amount, details):
+    ev = FuelEvent(bus_id=bus_id, type=etype, amount_l=amount, details=details)
+    db.session.add(ev)
+    db.session.commit()
+    _alert(bus_id, 'WARN' if etype!='REFUEL' else 'INFO', f"Fuel {etype}", details)
+
+
+def _alert(bus_id, level, title, message):
+    a = Alert(bus_id=bus_id, level=level, title=title, message=message)
+    db.session.add(a)
+    db.session.commit()
+
+======================================
+File: app/api_transport.py
+======================================
+import os
+from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from . import db
+from .models import Bus, Telemetry, FuelEvent, Alert, Route, Waypoint
+from .utils import role_required, ROLE_TRANSPORT, api_key_required
+from .services_transport import process_telemetry
+
+transport_bp = Blueprint('transport', __name__)
+
+# CRUD for buses
+@transport_bp.get('/buses')
+@login_required
+@role_required(ROLE_TRANSPORT)
+def list_buses():
+    buses = Bus.query.all()
+    return jsonify([{ 'id': b.id, 'name': b.name, 'registration_no': b.registration_no } for b in buses])
+
+@transport_bp.post('/buses')
+@login_required
+@role_required(ROLE_TRANSPORT)
+def create_bus():
+    data = request.get_json() or {}
+    b = Bus(name=data['name'], registration_no=data.get('registration_no'), school_id=data.get('school_id'), api_key=data.get('api_key'))
+    db.session.add(b)
+    db.session.commit()
+    return jsonify({"id": b.id}), 201
+
+# Routes and waypoints
+@transport_bp.post('/routes')
+@login_required
+@role_required(ROLE_TRANSPORT)
+def create_route():
+    data = request.get_json() or {}
+    r = Route(name=data['name'], bus_id=data.get('bus_id'), school_id=data.get('school_id'))
+    db.session.add(r)
+    db.session.commit()
+    for i, wp in enumerate(data.get('waypoints', []), start=1):
+        w = Waypoint(route_id=r.id, seq=i, lat=wp['lat'], lon=wp['lon'], stop_name=wp.get('stop_name'))
+        db.session.add(w)
+    db.session.commit()
+    return jsonify({"id": r.id}), 201
+
+# Sensor HTTP ingestion
+@transport_bp.post('/ingest/http')
+@api_key_required(lambda k: Bus.query.filter_by(api_key=k).first())
+def ingest_http(bus):
+    payload = request.get_json() or {}
+    process_telemetry(bus, payload)
+    return jsonify({"status": "ok"})
+
+@transport_bp.get('/telemetry/latest/<int:bus_id>')
+@login_required
+def latest(bus_id):
+    t = Telemetry.query.filter_by(bus_id=bus_id).order_by(Telemetry.ts.desc()).first()
+    if not t:
+        return jsonify({}), 404
+    return jsonify({
+        'bus_id': t.bus_id,
+        'ts': t.ts.isoformat(),
+        'lat': t.lat,
+        'lon': t.lon,
+        'speed_kmh': t.speed_kmh,
+        'fuel_level_l': t.fuel_level_l
+    })
+
+@transport_bp.get('/fuel/events/<int:bus_id>')
+@login_required
+def fuel_events(bus_id):
+    evs = FuelEvent.query.filter_by(bus_id=bus_id).order_by(FuelEvent.ts.desc()).limit(100).all()
+    return jsonify([{ 'id': e.id, 'ts': e.ts.isoformat(), 'type': e.type, 'amt': e.amount_l, 'details': e.details } for e in evs])
+
+@transport_bp.get('/alerts/<int:bus_id>')
+@login_required
+def alerts(bus_id):
+    items = Alert.query.filter_by(bus_id=bus_id).order_by(Alert.ts.desc()).limit(100).all()
+    return jsonify([{ 'id': a.id, 'ts': a.ts.isoformat(), 'level': a.level, 'title': a.title, 'msg': a.message } for a in items])
+
+======================================
+File: app/sockets.py
+======================================
+from flask_socketio import emit
+
+def register_socketio(socketio):
+    @socketio.on('connect')
+    def on_connect():
+        emit('server_msg', {'message': 'connected'})
+
+======================================
+File: app/scheduler.py
+======================================
+from apscheduler.schedulers.background import BackgroundScheduler
+
+def init_scheduler(app):
+    scheduler = BackgroundScheduler(daemon=True)
+
+    def heartbeat():
+        app.logger.info('scheduler heartbeat ok')
+
+    scheduler.add_job(heartbeat, 'interval', minutes=10)
+    scheduler.start()
+
+======================================
+File: app/mqtt_bridge.py
+======================================
+import os
+import threading
+import json
+import paho.mqtt.client as mqtt
+from . import db
+from .models import Bus
+from .services_transport import process_telemetry
+
+client = None
+
+def start_mqtt(app):
+    global client
+    broker = os.getenv('MQTT_BROKER_URL')
+    if not broker:
+        app.logger.info('MQTT disabled')
+        return
+    port = int(os.getenv('MQTT_BROKER_PORT', '1883'))
+    topic = os.getenv('MQTT_TOPIC', 'schools/+/buses/+/telemetry')
+
+    client = mqtt.Client()
+    user = os.getenv('MQTT_USERNAME')
+    pwd = os.getenv('MQTT_PASSWORD')
+    if user:
+        client.username_pw_set(user, pwd)
+
+    def on_connect(cl, userdata, flags, rc):
+        app.logger.info(f'MQTT connected rc={rc}, subscribing {topic}')
+        cl.subscribe(topic)
+
+    def on_message(cl, userdata, msg):
+        try:
+            payload = json.loads(msg.payload.decode('utf-8'))
+            # Expect api_key inside payload to map to a bus
+            api_key = payload.get('api_key')
+            if not api_key:
+                return
+            with app.app_context():
+                bus = Bus.query.filter_by(api_key=api_key).first()
+                if bus:
+                    process_telemetry(bus, payload)
+        except Exception as e:
+            app.logger.exception(e)
+
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    def _run():
+        client.connect(broker, port, 60)
+        client.loop_forever()
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+======================================
+File: app/pages.py
+======================================
+from flask import Blueprint, render_template
+
+pages_bp = Blueprint('pages', __name__)
+
+@pages_bp.get('/')
+def home():
+    return render_template('index.html')
+
+@pages_bp.get('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@pages_bp.get('/transport')
+def transport_page():
+    return render_template('transport.html')
+
+======================================
+File: templates/base.html
+======================================
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LMS + Transport</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <!-- Leaflet for maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- SocketIO client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" ></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">School LMS</div>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/transport">Transport</a>
+    </nav>
+  </header>
+  <main id="app">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">© {{ 2025 }} LMS</footer>
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
+
+======================================
+File: templates/index.html
+======================================
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <h1>Minimal LMS with Real‑time Transport</h1>
+  <p>Login, create courses, track buses live, and monitor fuel health</p>
+</section>
+{% endblock %}
+
+======================================
+File: templates/dashboard.html
+======================================
+{% extends 'base.html' %}
+{% block content %}
+<section class="grid">
+  <div class="card">
+    <h3>Courses</h3>
+    <div id="courses"></div>
+  </div>
+  <div class="card">
+    <h3>Assignments</h3>
+    <div id="assignments"></div>
+  </div>
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <button id="seed-btn">Seed demo data</button>
+  </div>
+</section>
+<script type="module">
+import { api } from '/static/js/app.js'
+const seedBtn = document.getElementById('seed-btn')
+seedBtn.onclick = async ()=>{
+  await fetch('/static/demo/seed.json').then(r=>r.json()).then(async data=>{
+    for (const c of data.courses) await api('/api/lms/courses', 'POST', c)
+  })
+  alert('Seeded demo courses')
+}
+
+const list = await fetch('/api/lms/courses').then(r=>r.json())
+document.getElementById('courses').innerHTML = list.map(c=>`<div>${c.name}</div>`).join('')
+</script>
+{% endblock %}
+
+======================================
+File: templates/transport.html
+======================================
+{% extends 'base.html' %}
+{% block content %}
+<section class="grid two">
+  <div class="card">
+    <h3>Live Map</h3>
+    <div id="map" style="height: 420px"></div>
+  </div>
+  <div class="card">
+    <h3>Fuel and Alerts</h3>
+    <div id="events"></div>
+  </div>
+</section>
+<script type="module">
+import { socket } from '/static/js/socket.js'
+
+const map = L.map('map').setView([34.0837, 74.7973], 12)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map)
+const markers = {}
+
+socket.on('telemetry_update', (d)=>{
+  const id = d.bus_id
+  if (!markers[id]){
+    markers[id] = L.marker([d.lat, d.lon]).addTo(map).bindPopup(`Bus ${id}`)
+  } else {
+    markers[id].setLatLng([d.lat, d.lon])
+  }
+})
+</script>
+{% endblock %}
+
+======================================
+File: static/css/styles.css
+======================================
+:root { --bg:#0f1115; --fg:#eaeef2; --muted:#a6b0bf; --card:#171a21; --accent:#4cc9f0; --accent2:#f1c40f }
+* { box-sizing:border-box }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto }
+.topbar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#0b0d11; border-bottom:1px solid #222 }
+.topbar a { color:var(--muted); margin-left:12px; text-decoration:none }
+.brand { font-weight:700; color:var(--accent) }
+.hero { padding:48px 16px }
+.grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; padding:16px }
+.grid.two { grid-template-columns: 2fr 1fr }
+.card { background:var(--card); border:1px solid #222; border-radius:14px; padding:16px; box-shadow: 0 6px 20px rgba(0,0,0,.3) }
+button { background:var(--accent); color:#001018; border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700 }
+#events { max-height:420px; overflow:auto }
+
+======================================
+File: static/js/app.js
+======================================
+export async function api(url, method='GET', data){
+  const opts = { method, headers: { 'Content-Type': 'application/json' } }
+  if (data) opts.body = JSON.stringify(data)
+  const res = await fetch(url, opts)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+======================================
+File: static/js/socket.js
+======================================
+export const socket = io()
+
+======================================
+File: static/demo/seed.json
+======================================
+{
+  "courses": [
+    {"name": "Mathematics 9"},
+    {"name": "Physics 11"},
+    {"name": "English 8"}
+  ]
+}
+
+======================================
+File: scripts/simulate_sensor.py
+======================================
+import os, time, json, random, requests
+API_KEY = os.getenv('BUS_API_KEY', 'demo-key')
+BASE = os.getenv('BASE_URL', 'http://localhost:8000')
+
+lat, lon = 34.0837, 74.7973
+fuel = 80.0
+odokm = 12000.0
+
+while True:
+    lat += (random.random()-0.5) * 0.002
+    lon += (random.random()-0.5) * 0.002
+    speed = max(0.0, random.gauss(30, 10))
+    fuel -= max(0.0, random.random()*0.05)
+    odokm += speed/60.0
+    payload = {
+        "api_key": API_KEY,
+        "ts": int(time.time()*1000),
+        "lat": lat,
+        "lon": lon,
+        "speed_kmh": speed,
+        "fuel_level_l": fuel,
+        "fuel_flow_lph": random.random()*3,
+        "odometer_km": odokm,
+        "engine_on": True
+    }
+    try:
+        r = requests.post(f"{BASE}/api/transport/ingest/http", json=payload, headers={"X-API-KEY": API_KEY})
+        print(r.status_code, r.text)
+    except Exception as e:
+        print('ERR', e)
+    time.sleep(2)
+
+======================================
+File: README.md
+======================================
+LMS + Transport
+
+Quick start
+1. Create a Replit Python project and drop these files
+2. Add a .env with values from .env.example then Replit Secrets
+3. Run run.py. On first run the DB is created
+4. Open Transport page to view live map
+
+Create a demo bus
+- POST /api/transport/buses with JSON
+  { "name": "Bus A", "school_id": 1, "registration_no": "JK01-1234", "api_key": "demo-key" }
+- Start the simulator in a separate shell
+  BASE_URL=http://localhost:8000 BUS_API_KEY=demo-key python scripts/simulate_sensor.py
+
+Notes
+- HTTP ingestion uses header X-API-KEY to map sensor data to a bus
+- Optional MQTT bridge connects to broker and expects payload with api_key
+- Alerts are created for overspeed >60 kmh fuel theft sudden drop refuel sudden rise and idling
+- Extend LMS by adding models and routes; current build includes base courses assignments submissions attendance
+
+======================================
+# End of files
+
+Post‑generation tasks for Replit to run automatically
+- Install dependencies from requirements.txt
+- Create instance directory and SQLite database if missing
+- Start the Flask app with SocketIO via run.py on port 8000
+- Print the first run admin setup instructions to console
+
+Make everything consistent with the file contents above. Do not omit any file. Provide working imports. Ensure that SocketIO events deliver live telemetry to Transport page. Keep UI minimal and fast without external frameworks except Leaflet and Socket.IO via CDN.
