@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Server Error - School Management{% endblock %}
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-md-6 mx-auto text-center">
+            <h1 class="display-1">500</h1>
+            <h2>Server Error</h2>
+            <p class="lead">Something went wrong on our end. Please try again later.</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Profile - School Management{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h2 class="mb-4">My Profile</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Full Name:</strong></div>
+                        <div class="col-md-8">{{ user.full_name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Email:</strong></div>
+                        <div class="col-md-8">{{ user.email }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Phone:</strong></div>
+                        <div class="col-md-8">{{ user.phone or 'Not provided' }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Role:</strong></div>
+                        <div class="col-md-8">
+                            {% for role in user.roles %}
+                            <span class="badge bg-info">{{ role.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>School:</strong></div>
+                        <div class="col-md-8">{{ user.school.name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Member Since:</strong></div>
+                        <div class="col-md-8">{{ user.created_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Last Login:</strong></div>
+                        <div class="col-md-8">{{ user.last_login.strftime('%B %d, %Y at %I:%M %p') if user.last_login else 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Update Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_profile') }}">
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" name="phone" value="{{ user.phone or '' }}">
+                        </div>
+                        <hr>
+                        <h6>Change Password</h6>
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" name="current_password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" name="new_password">
+                            <small class="text-muted">Leave blank if you don't want to change password</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

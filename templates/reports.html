@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Reports - School Management{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Reports & Analytics</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Users</h6>
+                    <h2>{{ total_users }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Courses</h6>
+                    <h2>{{ total_courses }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Buses</h6>
+                    <h2>{{ total_buses }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Active Buses</h6>
+                    <h2>{{ active_buses }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>System Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statsChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Users</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td>{{ user.full_name }}</td>
+                                    <td>
+                                        {% for role in user.roles %}
+                                        <span class="badge bg-info">{{ role.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%b %d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Alert Summary</h5>
+                </div>
+                <div class="card-body">
+                    <p>Total Alerts: <strong>{{ total_alerts }}</strong></p>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 60%">Resolved</div>
+                        <div class="progress-bar bg-warning" style="width: 25%">Pending</div>
+                        <div class="progress-bar bg-danger" style="width: 15%">Critical</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('statsChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Users', 'Courses', 'Buses', 'Alerts'],
+            datasets: [{
+                label: 'System Statistics',
+                data: [{{ total_users }}, {{ total_courses }}, {{ total_buses }}, {{ total_alerts }}],
+                backgroundColor: ['#007bff', '#28a745', '#17a2b8', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

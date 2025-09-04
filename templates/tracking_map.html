@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Live Map - School Management{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Real-Time Bus Tracking</h3>
+        <div>
+            <button class="btn btn-primary" onclick="refreshMap()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <a href="{{ url_for('transport') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="map" style="height: 600px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Bus Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for bus in buses %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>{{ bus.number }}</h6>
+                                    <p class="mb-1"><small>Driver: {{ bus.driver }}</small></p>
+                                    <p class="mb-1"><small>Status: <span class="badge bg-{{ 'success' if bus.status == 'active' else 'secondary' }}">{{ bus.status }}</span></small></p>
+                                    <p class="mb-0"><small>Fuel: {{ bus.fuel }}%</small></p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+var map;
+var busMarkers = {};
+var busData = {{ buses|tojson }};
+
+function initMap() {
+    map = L.map('map').setView([0, 0], 2);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add bus markers
+    busData.forEach(function(bus) {
+        if (bus.lat && bus.lng) {
+            var marker = L.marker([bus.lat, bus.lng])
+                .addTo(map)
+                .bindPopup('<b>' + bus.number + '</b><br>Driver: ' + bus.driver + '<br>Fuel: ' + bus.fuel + '%');
+            busMarkers[bus.id] = marker;
+        }
+    });
+    
+    // Fit map to show all buses
+    if (Object.keys(busMarkers).length > 0) {
+        var group = new L.featureGroup(Object.values(busMarkers));
+        map.fitBounds(group.getBounds());
+    }
+}
+
+function refreshMap() {
+    location.reload();
+}
+
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

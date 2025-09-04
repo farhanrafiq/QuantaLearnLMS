@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found - School Management{% endblock %}
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-md-6 mx-auto text-center">
+            <h1 class="display-1">404</h1>
+            <h2>Page Not Found</h2>
+            <p class="lead">The page you're looking for doesn't exist.</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
