@@ -7,6 +7,7 @@ from utils import role_required, calculate_fuel_efficiency, detect_fuel_anomaly
 from datetime import datetime, timedelta
 import json
 import secrets
+import logging
 
 @app.route('/transport')
 @login_required
@@ -59,94 +60,157 @@ def get_buses():
 @login_required
 @role_required('TransportManager', 'SchoolAdmin', 'SuperAdmin')
 def create_bus():
-    data = request.get_json()
-    
-    # Generate unique API key for the bus
-    api_key = secrets.token_urlsafe(32)
-    
-    bus = Bus()
-    bus.school_id = current_user.school_id
-    bus.name = data.get('name')
-    bus.registration_no = data.get('registration_no')
-    bus.capacity = data.get('capacity', 50)
-    bus.api_key = api_key
-    bus.fuel_tank_capacity = data.get('fuel_tank_capacity', 100.0)
-    
-    db.session.add(bus)
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Bus created successfully',
-        'bus_id': bus.id,
-        'api_key': api_key
-    }), 201
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON data required'}), 400
+        
+        name = data.get('name')
+        registration_no = data.get('registration_no')
+        
+        if not name or not registration_no:
+            return jsonify({'error': 'Bus name and registration number required'}), 400
+        
+        # Check if registration number already exists in school
+        existing_bus = Bus.query.filter_by(
+            registration_no=registration_no,
+            school_id=current_user.school_id
+        ).first()
+        if existing_bus:
+            return jsonify({'error': 'Registration number already exists'}), 400
+        
+        capacity = data.get('capacity', 50)
+        fuel_tank_capacity = data.get('fuel_tank_capacity', 100.0)
+        
+        if capacity < 1 or capacity > 200:
+            return jsonify({'error': 'Invalid capacity value'}), 400
+        if fuel_tank_capacity < 10 or fuel_tank_capacity > 1000:
+            return jsonify({'error': 'Invalid fuel tank capacity'}), 400
+        
+        # Generate unique API key for the bus
+        api_key = secrets.token_urlsafe(32)
+        
+        bus = Bus()
+        bus.school_id = current_user.school_id
+        bus.name = name.strip()
+        bus.registration_no = registration_no.strip().upper()
+        bus.capacity = capacity
+        bus.api_key = api_key
+        bus.fuel_tank_capacity = fuel_tank_capacity
+        
+        db.session.add(bus)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Bus created successfully',
+            'bus_id': bus.id,
+            'api_key': api_key
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating bus: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/transport/telemetry/<int:bus_id>', methods=['POST'])
 def receive_telemetry(bus_id):
-    # Verify API key
-    api_key = request.headers.get('X-API-Key')
-    bus = Bus.query.filter_by(id=bus_id, api_key=api_key).first()
-    
-    if not bus:
-        return jsonify({'error': 'Invalid bus ID or API key'}), 403
-    
-    data = request.get_json()
-    
-    # Create telemetry record
-    telemetry = Telemetry()
-    telemetry.bus_id = bus_id
-    telemetry.latitude = data.get('latitude')
-    telemetry.longitude = data.get('longitude')
-    telemetry.speed_kmh = data.get('speed_kmh', 0)
-    telemetry.fuel_level_liters = data.get('fuel_level_liters')
-    telemetry.fuel_flow_lph = data.get('fuel_flow_lph', 0)
-    telemetry.odometer_km = data.get('odometer_km', 0)
-    telemetry.engine_on = data.get('engine_on', False)
-    telemetry.heading = data.get('heading')
-    telemetry.altitude = data.get('altitude')
-    
-    db.session.add(telemetry)
-    
-    # Analyze fuel data for anomalies
-    previous_telemetry = Telemetry.query.filter_by(bus_id=bus_id).order_by(Telemetry.timestamp.desc()).offset(1).first()
-    
-    if previous_telemetry:
-        fuel_anomaly = detect_fuel_anomaly(previous_telemetry, telemetry, bus)
-        if fuel_anomaly:
-            fuel_event = FuelEvent()
-            fuel_event.bus_id = bus_id
-            fuel_event.event_type = fuel_anomaly['type']
-            fuel_event.amount_liters = fuel_anomaly.get('amount', 0)
-            fuel_event.details = fuel_anomaly.get('details', '')
-            fuel_event.severity = fuel_anomaly.get('severity', 'INFO')
-            db.session.add(fuel_event)
+    try:
+        # Verify API key
+        api_key = request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({'error': 'API key required'}), 401
             
-            # Create alert for critical events
-            if fuel_anomaly['severity'] in ['WARNING', 'CRITICAL']:
-                alert = Alert()
-                alert.bus_id = bus_id
-                alert.level = fuel_anomaly['severity']
-                alert.title = f"Fuel {fuel_anomaly['type'].title()} Detected"
-                alert.message = fuel_anomaly.get('details', '')
-                db.session.add(alert)
+        bus = Bus.query.filter_by(id=bus_id, api_key=api_key).first()
+        if not bus:
+            return jsonify({'error': 'Invalid bus ID or API key'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON data required'}), 400
     
-    # Check for other alerts (speed, geofence, etc.)
-    check_alerts(telemetry, bus)
-    
-    db.session.commit()
-    
-    # Emit real-time update via SocketIO
-    socketio.emit('telemetry_update', {
-        'bus_id': bus_id,
-        'latitude': telemetry.latitude,
-        'longitude': telemetry.longitude,
-        'speed_kmh': telemetry.speed_kmh,
-        'fuel_level_liters': telemetry.fuel_level_liters,
-        'engine_on': telemetry.engine_on,
-        'timestamp': telemetry.timestamp.isoformat()
-    }, to=f'school_{bus.school_id}')
-    
-    return jsonify({'message': 'Telemetry received successfully'}), 200
+        # Validate telemetry data
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        if latitude is not None and (latitude < -90 or latitude > 90):
+            return jsonify({'error': 'Invalid latitude value'}), 400
+        if longitude is not None and (longitude < -180 or longitude > 180):
+            return jsonify({'error': 'Invalid longitude value'}), 400
+            
+        speed_kmh = data.get('speed_kmh', 0)
+        if speed_kmh < 0 or speed_kmh > 200:
+            return jsonify({'error': 'Invalid speed value'}), 400
+            
+        fuel_level = data.get('fuel_level_liters')
+        if fuel_level is not None and (fuel_level < 0 or fuel_level > bus.fuel_tank_capacity * 1.1):
+            return jsonify({'error': 'Invalid fuel level value'}), 400
+        
+        # Create telemetry record
+        telemetry = Telemetry()
+        telemetry.bus_id = bus_id
+        telemetry.latitude = latitude
+        telemetry.longitude = longitude
+        telemetry.speed_kmh = speed_kmh
+        telemetry.fuel_level_liters = fuel_level
+        telemetry.fuel_flow_lph = max(0, data.get('fuel_flow_lph', 0))
+        telemetry.odometer_km = max(0, data.get('odometer_km', 0))
+        telemetry.engine_on = bool(data.get('engine_on', False))
+        telemetry.heading = data.get('heading')
+        telemetry.altitude = data.get('altitude')
+        
+        db.session.add(telemetry)
+        
+        # Analyze fuel data for anomalies
+        previous_telemetry = Telemetry.query.filter_by(bus_id=bus_id).order_by(Telemetry.timestamp.desc()).offset(1).first()
+        
+        if previous_telemetry:
+            fuel_anomaly = detect_fuel_anomaly(previous_telemetry, telemetry, bus)
+            if fuel_anomaly:
+                fuel_event = FuelEvent()
+                fuel_event.bus_id = bus_id
+                fuel_event.event_type = fuel_anomaly['type']
+                fuel_event.amount_liters = fuel_anomaly.get('amount', 0)
+                fuel_event.details = fuel_anomaly.get('details', '')
+                fuel_event.severity = fuel_anomaly.get('severity', 'INFO')
+                db.session.add(fuel_event)
+                
+                # Create alert for critical events
+                if fuel_anomaly['severity'] in ['WARNING', 'CRITICAL']:
+                    alert = Alert()
+                    alert.bus_id = bus_id
+                    alert.level = fuel_anomaly['severity']
+                    alert.title = f"Fuel {fuel_anomaly['type'].title()} Detected"
+                    alert.message = fuel_anomaly.get('details', '')
+                    db.session.add(alert)
+        
+        # Check for other alerts (speed, geofence, etc.)
+        try:
+            check_alerts(telemetry, bus)
+        except Exception as alert_error:
+            logging.warning(f"Alert check failed for bus {bus_id}: {alert_error}")
+        
+        db.session.commit()
+        
+        # Emit real-time update via SocketIO
+        try:
+            socketio.emit('telemetry_update', {
+                'bus_id': bus_id,
+                'latitude': telemetry.latitude,
+                'longitude': telemetry.longitude,
+                'speed_kmh': telemetry.speed_kmh,
+                'fuel_level_liters': telemetry.fuel_level_liters,
+                'engine_on': telemetry.engine_on,
+                'timestamp': telemetry.timestamp.isoformat()
+            }, to=f'school_{bus.school_id}')
+        except Exception as socket_error:
+            logging.warning(f"SocketIO emit failed: {socket_error}")
+        
+        return jsonify({'message': 'Telemetry received successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error processing telemetry for bus {bus_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/transport/fuel-analytics/<int:bus_id>')
 @login_required

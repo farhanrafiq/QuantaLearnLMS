@@ -52,56 +52,86 @@ def logout():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        data = request.get_json() if request.is_json else request.form
+        try:
+            data = request.get_json() if request.is_json else request.form
+            
+            email = data.get('email', '').strip().lower()
+            password = data.get('password', '')
+            full_name = data.get('full_name', '').strip()
+            school_name = data.get('school_name', 'Default School').strip()
+            role_name = data.get('role', 'Student')
+            
+            # Validate input
+            if not all([email, password, full_name]):
+                error_msg = 'Email, password, and full name are required'
+                if request.is_json:
+                    return jsonify({'error': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('register.html')
+            
+            # Validate email format
+            import re
+            email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_regex, email):
+                error_msg = 'Invalid email format'
+                if request.is_json:
+                    return jsonify({'error': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('register.html')
+            
+            # Validate password length
+            if len(password) < 6:
+                error_msg = 'Password must be at least 6 characters long'
+                if request.is_json:
+                    return jsonify({'error': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('register.html')
         
-        email = data.get('email')
-        password = data.get('password')
-        full_name = data.get('full_name')
-        school_name = data.get('school_name', 'Default School')
-        role_name = data.get('role', 'Student')
+            # Check if user already exists
+            if User.query.filter_by(email=email).first():
+                error_msg = 'Email already registered'
+                if request.is_json:
+                    return jsonify({'error': error_msg}), 400
+                flash(error_msg, 'error')
+                return render_template('register.html')
         
-        if not all([email, password, full_name]):
-            if request.is_json:
-                return jsonify({'error': 'Email, password, and full name are required'}), 400
-            flash('Email, password, and full name are required.', 'error')
-            return render_template('register.html')
-        
-        # Check if user already exists
-        if User.query.filter_by(email=email).first():
-            if request.is_json:
-                return jsonify({'error': 'Email already registered'}), 400
-            flash('Email already registered.', 'error')
-            return render_template('register.html')
-        
-        # Get or create school
-        school = School.query.filter_by(name=school_name).first()
-        if not school:
-            school = School()
-            school.name = school_name
-            db.session.add(school)
+            # Get or create school
+            school = School.query.filter_by(name=school_name).first()
+            if not school:
+                school = School()
+                school.name = school_name
+                db.session.add(school)
+                db.session.commit()
+            
+            # Get role
+            role = Role.query.filter_by(name=role_name).first()
+            if not role:
+                role = Role.query.filter_by(name='Student').first()
+            
+            # Create user
+            user = User()
+            user.email = email
+            user.password_hash = generate_password_hash(password)
+            user.full_name = full_name
+            user.school_id = school.id
+            user.roles.append(role)
+            
+            db.session.add(user)
             db.session.commit()
-        
-        # Get role
-        role = Role.query.filter_by(name=role_name).first()
-        if not role:
-            role = Role.query.filter_by(name='Student').first()
-        
-        # Create user
-        user = User()
-        user.email = email
-        user.password_hash = generate_password_hash(password)
-        user.full_name = full_name
-        user.school_id = school.id
-        user.roles.append(role)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        if request.is_json:
-            return jsonify({'message': 'User registered successfully'}), 201
-        
-        flash('Registration successful! Please log in.', 'success')
-        return redirect(url_for('login'))
+            
+            if request.is_json:
+                return jsonify({'message': 'User registered successfully'}), 201
+            
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            error_msg = 'Registration failed. Please try again.'
+            if request.is_json:
+                return jsonify({'error': error_msg}), 500
+            flash(error_msg, 'error')
+            return render_template('register.html')
     
     return render_template('register.html')
 

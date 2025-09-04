@@ -1,18 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Login - QuantaFONS{% endblock %}
+{% block title %}Login - School Management{% endblock %}
 
 {% block content %}
 <div class="container-fluid login-container d-flex align-items-center justify-content-center min-vh-100">
     <div class="row w-100">
         <div class="col-lg-4 col-md-6 col-sm-8 mx-auto">
-            <div class="card quantafons-card shadow-lg border-0">
+            <div class="card shadow border-0">
                 <div class="card-body p-5">
-                    <!-- Logo and Title -->
+                    <!-- Title -->
                     <div class="text-center mb-4">
-                        <img src="{{ url_for('static', filename='assets/logo.svg') }}" alt="QuantaFONS" height="64" class="mb-3">
-                        <h2 class="quantafons-title mb-2">Welcome to QuantaFONS</h2>
-                        <p class="text-muted">Smart School Management System</p>
+                        <h2 class="mb-3">Sign In</h2>
+                        <p class="text-muted">School Management System</p>
                     </div>
                     
                     <!-- Login Form -->
@@ -45,19 +44,11 @@
                             <label class="form-check-label" for="remember">Remember me</label>
                         </div>
                         
-                        <button type="submit" class="btn quantafons-btn-primary w-100 mb-3">
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
                             <i class="fas fa-sign-in-alt me-1"></i>Sign In
                         </button>
                     </form>
                     
-                    <!-- Demo Credentials -->
-                    <div class="alert alert-info" role="alert">
-                        <h6><i class="fas fa-info-circle me-1"></i>Demo Credentials</h6>
-                        <small>
-                            <strong>Admin:</strong> admin@quantafons.com / admin123<br>
-                            <strong>Demo:</strong> Create an account or use the admin credentials above
-                        </small>
-                    </div>
                     
                     <!-- Links -->
                     <div class="text-center">
@@ -68,27 +59,6 @@
                 </div>
             </div>
             
-            <!-- Features -->
-            <div class="row mt-4">
-                <div class="col-4 text-center">
-                    <div class="feature-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <small class="text-muted">Learning Management</small>
-                </div>
-                <div class="col-4 text-center">
-                    <div class="feature-icon">
-                        <i class="fas fa-bus"></i>
-                    </div>
-                    <small class="text-muted">Live Bus Tracking</small>
-                </div>
-                <div class="col-4 text-center">
-                    <div class="feature-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <small class="text-muted">Fuel Analytics</small>
-                </div>
-            </div>
         </div>
     </div>
 </div>

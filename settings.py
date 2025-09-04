@@ -190,7 +190,12 @@ def get_setting(category, key, default=None, user_id=None, school_id=None):
 def set_setting(category, key, value, data_type='string', user_id=None, school_id=None):
     """Helper function to set a setting value"""
     try:
+        setting = None
         if user_id:
+            user = User.query.get(user_id)
+            if not user:
+                return False
+                
             setting = Setting.query.filter_by(
                 user_id=user_id,
                 category=category,
@@ -199,7 +204,7 @@ def set_setting(category, key, value, data_type='string', user_id=None, school_i
             if not setting:
                 setting = Setting()
                 setting.user_id = user_id
-                setting.school_id = User.query.get(user_id).school_id
+                setting.school_id = user.school_id
         elif school_id:
             setting = Setting.query.filter_by(
                 school_id=school_id,
@@ -212,11 +217,12 @@ def set_setting(category, key, value, data_type='string', user_id=None, school_i
                 setting.school_id = school_id
                 setting.user_id = None
         
-        setting.category = category
-        setting.key = key
-        setting.data_type = data_type
-        setting.set_value(value)
-        setting.updated_at = datetime.utcnow()
+        if setting:
+            setting.category = category
+            setting.key = key
+            setting.data_type = data_type
+            setting.set_value(value)
+            setting.updated_at = datetime.utcnow()
         
         db.session.add(setting)
         db.session.commit()

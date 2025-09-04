@@ -96,19 +96,54 @@ def get_courses():
 @login_required
 @role_required('Teacher', 'SchoolAdmin', 'SuperAdmin')
 def create_course():
-    data = request.get_json()
-    
-    course = Course()
-    course.school_id = current_user.school_id
-    course.name = data.get('name')
-    course.description = data.get('description')
-    course.teacher_id = current_user.id if current_user.has_role('Teacher') else data.get('teacher_id')
-    course.classroom_id = data.get('classroom_id')
-    
-    db.session.add(course)
-    db.session.commit()
-    
-    return jsonify({'message': 'Course created successfully', 'course_id': course.id}), 201
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON data required'}), 400
+        
+        name = data.get('name')
+        if not name or not name.strip():
+            return jsonify({'error': 'Course name is required'}), 400
+        
+        # Validate teacher_id if provided
+        teacher_id = data.get('teacher_id')
+        if not current_user.has_role('Teacher') and teacher_id:
+            from models import User, Role
+            from models import Role
+            teacher_exists = db.session.query(User).join(User.roles).join(Role).filter(
+                User.id == teacher_id,
+                User.school_id == current_user.school_id,
+                Role.name == 'Teacher'
+            ).first()
+            if not teacher_exists:
+                return jsonify({'error': 'Invalid teacher ID'}), 400
+        
+        # Validate classroom_id if provided
+        classroom_id = data.get('classroom_id')
+        if classroom_id:
+            from models import Classroom
+            classroom = Classroom.query.filter_by(
+                id=classroom_id,
+                school_id=current_user.school_id
+            ).first()
+            if not classroom:
+                return jsonify({'error': 'Invalid classroom ID'}), 400
+        
+        course = Course()
+        course.school_id = current_user.school_id
+        course.name = name.strip()
+        course.description = data.get('description', '').strip()
+        course.teacher_id = current_user.id if current_user.has_role('Teacher') else teacher_id
+        course.classroom_id = classroom_id
+        
+        db.session.add(course)
+        db.session.commit()
+        
+        return jsonify({'message': 'Course created successfully', 'course_id': course.id}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/lms/courses/<int:course_id>/assignments')
 @login_required
@@ -354,14 +389,14 @@ def mark_attendance():
         ).first()
         
         if existing_attendance:
-            existing_attendance.present = present
+            existing_attendance.status = 'present' if present else 'absent'
             existing_attendance.notes = notes
         else:
             new_attendance = Attendance()
             new_attendance.course_id = course_id
             new_attendance.student_id = student_id
             new_attendance.date = target_date
-            new_attendance.present = present
+            new_attendance.status = 'present' if present else 'absent'
             new_attendance.notes = notes
             db.session.add(new_attendance)
     
