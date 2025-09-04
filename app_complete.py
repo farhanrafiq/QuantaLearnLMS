@@ -210,7 +210,7 @@ class Alert(db.Model):
     type = db.Column(db.String(50), nullable=False)
     message = db.Column(db.Text)
     severity = db.Column(db.String(20), default='info')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     resolved_at = db.Column(db.DateTime)
     
     school = db.relationship('School', backref='alerts')
@@ -455,7 +455,7 @@ def dashboard():
         data['total_schools'] = School.query.count()
         data['total_users'] = User.query.count()
         data['total_buses'] = Bus.query.count()
-        data['recent_alerts'] = Alert.query.order_by(Alert.created_at.desc()).limit(5).all()
+        data['recent_alerts'] = Alert.query.order_by(Alert.timestamp.desc()).limit(5).all()
     elif user_role == 'Teacher':
         data['my_courses'] = Course.query.filter_by(teacher_id=current_user.id).all()
         data['total_students'] = sum(len(course.students) for course in data['my_courses'])
@@ -478,7 +478,7 @@ def dashboard():
         data['my_routes'] = Route.query.filter_by(bus_id=data['my_bus'].id).all() if data['my_bus'] else []
         data['today_alerts'] = Alert.query.filter(
             Alert.bus_id == data['my_bus'].id if data['my_bus'] else None,
-            Alert.created_at >= datetime.utcnow().date()
+            Alert.timestamp >= datetime.utcnow().date()
         ).all()
     
     return render_template('dashboard.html', **data)

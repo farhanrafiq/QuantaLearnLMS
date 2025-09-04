@@ -38,14 +38,14 @@
                     </li>
                     {% if current_user.has_role('Teacher') or current_user.has_role('Student') or current_user.has_role('SchoolAdmin') or current_user.has_role('SuperAdmin') %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('lms_dashboard') }}">
+                        <a class="nav-link" href="{{ url_for('courses') }}">
                             <i class="fas fa-graduation-cap me-1"></i>LMS
                         </a>
                     </li>
                     {% endif %}
                     {% if current_user.has_role('TransportManager') or current_user.has_role('Driver') or current_user.has_role('SchoolAdmin') or current_user.has_role('SuperAdmin') %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('transport_dashboard') }}">
+                        <a class="nav-link" href="{{ url_for('transport') }}">
                             <i class="fas fa-bus me-1"></i>Transport
                         </a>
                     </li>
@@ -63,7 +63,7 @@
                             <li><span class="dropdown-item-text text-muted">{{ current_user.school.name }}</span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-1"></i>Profile</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('settings_page') }}"><i class="fas fa-cog me-1"></i>Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fas fa-cog me-1"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
                         </ul>
