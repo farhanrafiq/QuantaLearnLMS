@@ -202,7 +202,7 @@ def log_activity(user_id, activity_type, description=None, resource_type=None, r
     """Log user activity for monitoring"""
     try:
         from models import ActivityLog
-        from app import db
+        from app_final import db
         
         activity = ActivityLog()
         activity.user_id = user_id
@@ -225,7 +225,7 @@ def get_recent_activities(school_id, limit=50):
     """Get recent activities for the school"""
     try:
         from models import ActivityLog, User
-        from app import db
+        from app_final import db
         
         activities = db.session.query(ActivityLog, User).join(
             User, ActivityLog.user_id == User.id

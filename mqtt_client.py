@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 import paho.mqtt.client as mqtt
-from app import db
+from app_final import db
 
 # MQTT Configuration
 MQTT_BROKER = os.getenv('MQTT_BROKER_URL', 'broker.hivemq.com')
@@ -89,7 +89,7 @@ def on_message(client, userdata, msg):
                 db.session.commit()
                 
                 # Emit SocketIO update
-                from app import socketio
+                from app_final import socketio
                 socketio.emit('telemetry_update', {
                     'bus_id': int(bus_id),
                     'latitude': telemetry.latitude,

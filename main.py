@@ -1,4 +1,4 @@
-from app_clean import app
+from app_production_final import app
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))

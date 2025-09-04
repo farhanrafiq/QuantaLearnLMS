@@ -1,6 +1,6 @@
 from flask import render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
-from app import app, db
+from app_final import app, db
 from models import Setting, User, School, Bus, Course
 from utils import role_required
 from datetime import datetime

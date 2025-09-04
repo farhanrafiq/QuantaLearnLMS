@@ -1,7 +1,7 @@
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 from flask_socketio import emit
-from app import app, db, socketio
+from app_final import app, db, socketio
 from models import Bus, Route, Waypoint, Telemetry, FuelEvent, Alert, Geofence
 from utils import role_required, calculate_fuel_efficiency, detect_fuel_anomaly
 from datetime import datetime, timedelta
