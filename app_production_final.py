@@ -111,6 +111,12 @@ def dashboard():
     user_role = current_user.get_primary_role()
     return render_template('dashboard.html', user_role=user_role)
 
+@app.route('/register')
+def register():
+    # For production, redirect to login - registration handled by admin
+    flash('Registration is handled by system administrator', 'info')
+    return redirect(url_for('login'))
+
 @app.route('/logout')
 @login_required
 def logout():
