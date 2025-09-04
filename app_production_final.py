@@ -144,9 +144,11 @@ def initialize_app():
                         role = Role()
                         role.name = role_name
                         db.session.add(role)
+                db.session.commit()
                 
                 # Create default school if it doesn't exist
-                if not School.query.filter_by(name='QuantaFONS Demo School').first():
+                school = School.query.first()
+                if not school:
                     school = School()
                     school.name = 'QuantaFONS Demo School'
                     school.address = '123 Education Street'
@@ -155,21 +157,20 @@ def initialize_app():
                     school.country = 'Digital Nation'
                     db.session.add(school)
                     db.session.commit()
-                else:
-                    school = School.query.filter_by(name='QuantaFONS Demo School').first()
                 
                 # Create super admin if it doesn't exist
                 if not User.query.filter_by(email='admin@quantafons.com').first():
                     super_role = Role.query.filter_by(name='SuperAdmin').first()
-                    admin_user = User()
-                    admin_user.email = 'admin@quantafons.com'
-                    admin_user.password_hash = generate_password_hash('admin123')
-                    admin_user.full_name = 'QuantaFONS Administrator'
-                    admin_user.school_id = school.id
-                    admin_user.is_active = True
-                    admin_user.roles.append(super_role)
-                    db.session.add(admin_user)
-                    db.session.commit()
+                    if super_role:
+                        admin_user = User()
+                        admin_user.email = 'admin@quantafons.com'
+                        admin_user.password_hash = generate_password_hash('admin123')
+                        admin_user.full_name = 'QuantaFONS Administrator'
+                        admin_user.school_id = school.id
+                        admin_user.active = True
+                        admin_user.roles.append(super_role)
+                        db.session.add(admin_user)
+                        db.session.commit()
                 
                 logging.info("Application initialized successfully with default data")
             
