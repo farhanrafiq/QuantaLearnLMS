@@ -245,6 +245,56 @@ def ensure_database():
     try:
         db.create_all()
         
+        # Run migrations for PostgreSQL to ensure all columns exist
+        if 'postgresql' in str(db.engine.url) or 'postgres' in str(db.engine.url):
+            migrations = [
+                # Schools table
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS city VARCHAR(100);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS state VARCHAR(100);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS country VARCHAR(100);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS phone VARCHAR(30);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS email VARCHAR(120);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS website VARCHAR(200);",
+                "ALTER TABLE schools ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+                # Users table
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30);",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;",
+                # Courses table
+                "ALTER TABLE courses ADD COLUMN IF NOT EXISTS code VARCHAR(20);",
+                "ALTER TABLE courses ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 3;",
+                "ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+                # Buses table
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS number VARCHAR(50);",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS model VARCHAR(100);",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS fuel_capacity FLOAT DEFAULT 100.0;",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS current_fuel FLOAT DEFAULT 50.0;",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS lat FLOAT;",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS lng FLOAT;",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'offline';",
+                "ALTER TABLE buses ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+                # Fix buses table name column issue
+                "ALTER TABLE buses ALTER COLUMN name DROP NOT NULL;",
+                # Routes table
+                "ALTER TABLE routes ADD COLUMN IF NOT EXISTS start_location VARCHAR(255);",
+                "ALTER TABLE routes ADD COLUMN IF NOT EXISTS end_location VARCHAR(255);",
+                "ALTER TABLE routes ADD COLUMN IF NOT EXISTS waypoints TEXT;",
+                "ALTER TABLE routes ADD COLUMN IF NOT EXISTS distance FLOAT;",
+                "ALTER TABLE routes ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+                # Assignments table
+                "ALTER TABLE assignments ADD COLUMN IF NOT EXISTS due_date TIMESTAMP;",
+                "ALTER TABLE assignments ADD COLUMN IF NOT EXISTS max_points INTEGER DEFAULT 100;",
+                "ALTER TABLE assignments ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+            ]
+            
+            with db.engine.connect() as conn:
+                for migration in migrations:
+                    try:
+                        conn.execute(text(migration))
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
+                        pass  # Column already exists or table doesn't exist yet
+        
         # Create roles
         roles_list = ['SuperAdmin', 'SchoolAdmin', 'Teacher', 'Student', 'Parent', 'TransportManager', 'Driver', 'Accountant']
         for role_name in roles_list:
