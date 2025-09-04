@@ -1,0 +1,39 @@
+INFO:root:Using PostgreSQL database
+[2025-09-04 16:48:09 +0000] [55] [INFO] Starting gunicorn 23.0.0
+[2025-09-04 16:48:09 +0000] [55] [INFO] Listening at: http://0.0.0.0:10000 (55)
+[2025-09-04 16:48:09 +0000] [55] [INFO] Using worker: sync
+[2025-09-04 16:48:09 +0000] [58] [INFO] Booting worker with pid: 58
+ERROR:root:Database initialization failed: (psycopg2.errors.UndefinedColumn) column schools.city does not exist
+LINE 1: ...schools_name, schools.address AS schools_address, schools.ci...
+                                                             ^
+[SQL: SELECT schools.id AS schools_id, schools.name AS schools_name, schools.address AS schools_address, schools.city AS schools_city, schools.state AS schools_state, schools.country AS schools_country, schools.phone AS schools_phone, schools.email AS schools_email, schools.website AS schools_website, schools.is_active AS schools_is_active, schools.created_at AS schools_created_at 
+FROM schools 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+127.0.0.1 - - [04/Sep/2025:16:48:13 +0000] "HEAD / HTTP/1.1" 302 0 "-" "Go-http-client/1.1"
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://quantalearnlms.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+ERROR:root:Database initialization failed: (psycopg2.errors.UndefinedColumn) column schools.city does not exist
+LINE 1: ...schools_name, schools.address AS schools_address, schools.ci...
+                                                             ^
+[SQL: SELECT schools.id AS schools_id, schools.name AS schools_name, schools.address AS schools_address, schools.city AS schools_city, schools.state AS schools_state, schools.country AS schools_country, schools.phone AS schools_phone, schools.email AS schools_email, schools.website AS schools_website, schools.is_active AS schools_is_active, schools.created_at AS schools_created_at 
+FROM schools 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+127.0.0.1 - - [04/Sep/2025:16:48:18 +0000] "GET / HTTP/1.1" 302 199 "-" "Go-http-client/2.0"
+ERROR:root:Database initialization failed: (psycopg2.errors.UndefinedColumn) column schools.city does not exist
+LINE 1: ...schools_name, schools.address AS schools_address, schools.ci...
+                                                             ^
+[SQL: SELECT schools.id AS schools_id, schools.name AS schools_name, schools.address AS schools_address, schools.city AS schools_city, schools.state AS schools_state, schools.country AS schools_country, schools.phone AS schools_phone, schools.email AS schools_email, schools.website AS schools_website, schools.is_active AS schools_is_active, schools.created_at AS schools_created_at 
+FROM schools 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+127.0.0.1 - - [04/Sep/2025:16:48:20 +0000] "GET /login HTTP/1.1" 200 5529 "https://quantalearnlms.onrender.com" "Go-http-client/2.0"
