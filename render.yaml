@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: quantafons-lms
+    env: python
+    buildCommand: "pip install -r render-requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --worker-class eventlet main:app"
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MQTT_BROKER_URL
+        value: broker.hivemq.com
+      - key: MQTT_BROKER_PORT
+        value: 1883

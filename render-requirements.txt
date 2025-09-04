@@ -1,0 +1,17 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-SocketIO==5.3.6
+Flask-Migrate==4.0.5
+Flask-CORS==4.0.1
+Flask-JWT-Extended==4.6.0
+Werkzeug==3.0.3
+SQLAlchemy==2.0.31
+psycopg2-binary==2.9.7
+python-dotenv==1.0.0
+APScheduler==3.10.4
+paho-mqtt==1.6.1
+gunicorn==21.2.0
+eventlet==0.33.3
+haversine==2.8.0
+email-validator==2.0.0

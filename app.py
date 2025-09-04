@@ -27,8 +27,16 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "quantafons-dev-secret-key-2025")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///quantafons_lms.db")
+# Configure the database with better error handling
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    # For development only
+    database_url = "sqlite:///quantafons_lms.db"
+    logging.warning("No DATABASE_URL found, using SQLite for development")
+else:
+    logging.info(f"Using database: {database_url[:20]}...")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -43,24 +51,34 @@ login_manager.login_message = 'Please log in to access this page.'
 socketio.init_app(app, async_mode='threading')
 migrate.init_app(app, db)
 
-with app.app_context():
-    # Import models to ensure tables are created
-    import models
-    # Drop and recreate tables to ensure schema matches
-    db.drop_all()
-    db.create_all()
-    
-    # Create default roles and admin user
-    from models import Role, User, School
-    from werkzeug.security import generate_password_hash
-    
-    # Create roles if they don't exist
-    roles_list = ['SuperAdmin', 'SchoolAdmin', 'Teacher', 'Student', 'Parent', 'TransportManager', 'Driver', 'Accountant']
-    for role_name in roles_list:
-        if not Role.query.filter_by(name=role_name).first():
-            role = Role()
-            role.name = role_name
-            db.session.add(role)
+# Initialize database in a safer way for production
+def init_database():
+    try:
+        with app.app_context():
+            # Import models to ensure tables are created
+            import models
+            # Create tables if they don't exist (don't drop in production)
+            db.create_all()
+            logging.info("Database initialized successfully")
+            return True
+    except Exception as e:
+        logging.error(f"Database initialization failed: {e}")
+        return False
+
+# Only initialize if database connection works
+if init_database():
+    with app.app_context():
+        # Create default roles and admin user
+        from models import Role, User, School
+        from werkzeug.security import generate_password_hash
+        
+        # Create roles if they don't exist
+        roles_list = ['SuperAdmin', 'SchoolAdmin', 'Teacher', 'Student', 'Parent', 'TransportManager', 'Driver', 'Accountant']
+        for role_name in roles_list:
+            if not Role.query.filter_by(name=role_name).first():
+                role = Role()
+                role.name = role_name
+                db.session.add(role)
     
     # Create default school if it doesn't exist
     if not School.query.filter_by(name='QuantaFONS Demo School').first():

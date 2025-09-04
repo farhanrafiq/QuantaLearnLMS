@@ -1,0 +1,132 @@
+Pruning cache at: /opt/render/.cache/.python-uv/cache
+Removed 1457 files (29.4MiB)
+==> Uploading build...
+==> Uploaded in 4.1s. Compression took 1.3s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'gunicorn --bind 0.0.0.0:$PORT main:app'
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'gunicorn --bind 0.0.0.0:$PORT main:app'
+DEBUG:tzlocal:/etc/timezone found, contents:
+ Etc/UTC
+DEBUG:tzlocal:/etc/localtime found
+DEBUG:tzlocal:2 found:
+ {'/etc/timezone': 'Etc/UTC', '/etc/localtime is a symlink to': 'Etc/UTC'}
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/bin/gunicorn", line 10, in <module>
+    sys.exit(run())
+             ~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 66, in run
+    WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]", prog=prog).run()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 235, in run
+    super().run()
+    ~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 71, in run
+    Arbiter(self).run()
+    ~~~~~~~^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 57, in __init__
+    self.setup(app)
+    ~~~~~~~~~~^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 117, in setup
+    self.app.wsgi()
+    ~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/util.py", line 370, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/local/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/opt/render/project/src/main.py", line 1, in <module>
+    from app import app
+  File "/opt/render/project/src/app.py", line 39, in <module>
+    db.init_app(app)
+    ~~~~~~~~~~~^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/flask_sqlalchemy/extension.py", line 373, in init_app
+    self._apply_driver_defaults(options, app)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/flask_sqlalchemy/extension.py", line 607, in _apply_driver_defaults
+    url = sa.engine.make_url(options["url"])
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/sqlalchemy/engine/url.py", line 856, in make_url
+    return _parse_url(name_or_url)
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/sqlalchemy/engine/url.py", line 922, in _parse_url
+    raise exc.ArgumentError(
+        "Could not parse SQLAlchemy URL from given URL string"
+    )
+sqlalchemy.exc.ArgumentError: Could not parse SQLAlchemy URL from given URL string
+DEBUG:tzlocal:/etc/timezone found, contents:
+ Etc/UTC
+DEBUG:tzlocal:/etc/localtime found
+DEBUG:tzlocal:2 found:
+ {'/etc/timezone': 'Etc/UTC', '/etc/localtime is a symlink to': 'Etc/UTC'}
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/bin/gunicorn", line 10, in <module>
+    sys.exit(run())
+             ~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 66, in run
+    WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]", prog=prog).run()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 235, in run
+    super().run()
+    ~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 71, in run
+    Arbiter(self).run()
+    ~~~~~~~^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 57, in __init__
+    self.setup(app)
+    ~~~~~~~~~~^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 117, in setup
+    self.app.wsgi()
+    ~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/gunicorn/util.py", line 370, in import_app
+    mod = importlib.import_module(module)
+  File "/usr/local/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/opt/render/project/src/main.py", line 1, in <module>
+    from app import app
+  File "/opt/render/project/src/app.py", line 39, in <module>
+    db.init_app(app)
+    ~~~~~~~~~~~^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/flask_sqlalchemy/extension.py", line 373, in init_app
+    self._apply_driver_defaults(options, app)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/flask_sqlalchemy/extension.py", line 607, in _apply_driver_defaults
+    url = sa.engine.make_url(options["url"])
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/sqlalchemy/engine/url.py", line 856, in make_url
+    return _parse_url(name_or_url)
+  File "/opt/render/project/src/.venv/lib/python3.13/site-packages/sqlalchemy/engine/url.py", line 922, in _parse_url
+    raise exc.ArgumentError(
+        "Could not parse SQLAlchemy URL from given URL string"
+    )
+sqlalchemy.exc.ArgumentError: Could not parse SQLAlchemy URL from given URL string
